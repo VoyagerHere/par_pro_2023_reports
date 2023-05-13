@@ -1,0 +1,490 @@
+\documentclass[14pt, a4paper]{extarticle}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[a4paper,
+left=2cm,
+right=2cm,
+top=2cm,
+bottom=2cm]{geometry}
+\usepackage{color}
+\usepackage{mathtools}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{tocloft}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\usepackage[russian]{babel}
+
+\setlength{\parindent}{0.8cm}
+\setlength{\parskip}{0.4cm}
+\renewcommand{\contentsname}{}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=none,
+  language=C++,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=4
+}
+
+\title{}
+\author{}
+\date{}
+
+\begin{document}
+  \begin{titlepage}
+    \begin{center}
+      {\bfseries МИНИСТЕРСТВО НАУКИ И ВЫСШЕГО ОБРАЗОВАНИЯ \\
+        РОССИЙСКОЙ ФЕДЕРАЦИИ}
+      \\
+      Федеральное государственное автономное образовательное учреждение высшего образования
+      \\
+      {\bfseries «Национальный исследовательский Нижегородский государственный университет им. Н.И. Лобачевского»\\(ННГУ)
+        \\Институт информационных технологий, математики и механики} \\
+    \end{center}
+
+    \vspace{8em}
+
+    \begin{center}
+      ОТЧЕТ \\ по лабораторной работе \\
+      «Применение библиотек OpenMP и TBB для параллелизации решения задачи о построении выпуклой оболочки – проход Грэхема.»
+    \end{center}
+
+    \vspace{5em}
+
+
+    \begin{flushright}
+      {\bfseries Выполнил:} студент группы\\382006-2\\Строганцев А.М. \underline{\hspace{3cm}} \linebreak\linebreak\linebreak
+      {\bfseries Проверил:} младший научный\\сотрудник\\Нестеров А.Ю. \underline{\hspace{3cm}} 
+    \end{flushright}
+
+
+    \vspace{\fill}
+
+    \begin{center}
+      Нижний Новгород\\2023
+    \end{center}
+
+  \end{titlepage}
+
+  \tableofcontents
+  \thispagestyle{empty}
+  \newpage
+
+  \pagestyle{plain}
+  \setcounter{page}{3}
+
+  \section{Введение}
+     В ходе выполнения лабораторной работы будет рассмотрено применение различных методов параллелизации для решения задачи о построении выпуклой оболочки – проход Грэхема. В частности такие библиотеки как: OpenMP и TBB.
+
+    Проход Грэхема – это один из наиболее известных алгоритмов для построения выпуклой оболочки множества точек на плоскости. В его основе лежит идея последовательного выбора точек, которые образуют выпуклую оболочку. Однако, проход Грэхема имеет линейную сложность, что не позволяет эффективно обрабатывать большие объемы данных.
+    
+    Для повышения эффективности можно использовать методы параллелизации, которые позволяют распределить вычисления между несколькими потоками.
+    
+    Цель данной работы – исследовать возможности и эффективность двух библиотек параллелизации для решения задачи о построении выпуклой оболочки – проход Грэхема.
+  \newpage
+
+  \section{Постановка задачи}
+  Следует реализовать 2 рабочих варианта библиотеки/приложения, позволяющих интегрировать и использовать параллельную версию алгоритма построения выпуклой оболочки Грэхема.
+    \begin{itemize}
+      \item Программы должны быть созданы с помощью технологии OpenMP и TBB на языке C++.
+        \item В каждом варианте должна существовать функция принимающая на вход множество точек и возращающая выпуклую оболочку, созданную на основе исходного множества.
+        \item Корректным результатом работы является нахождение уникальной последовательности точек, представляющих выпуклую оболочку, образованную проходом против часовой стрелки, начиная с точки с наименьшей ординатой и абсциссой.
+        \item Также для установления некоторых закономерностей и проделывания выводов необходимо замерять время работы каждой версии алгоритма.
+    \end{itemize}
+  Далеее подведем итоги, где сравним реализации алгоритма между собой.
+  \newpage
+
+  \section{Описание алгоритма}
+  \begin{enumerate}
+      \item Находим самую нижнюю точку множества, называемую начальной точкой. Если таких точек несколько, то выбираем из них самую левую.
+
+        \item Сортируем все точки по углу, который они образуют с горизонтальной осью, проходящей через начальную точку.
+
+        \item Создаем стек и кладем в него первые две точки.
+
+        \item Просматриваем оставшиеся точки, начиная с третьей. Для каждой точки выполняем следующие действия:
+        
+        \begin{enumerate}[label*=\arabic*.]
+            \item Пока точка является внутренней для выпуклой оболочки, удаляем последнюю точку из стека. Это делается до тех пор, пока текущая точка не станет внешней для выпуклой оболочки.
+            \item Кладем текущую точку в стек.
+        \end{enumerate}
+
+        \item В конце алгоритма в стеке останутся только точки, образующие выпуклую оболочку множества.
+  \end{enumerate}
+  \newpage
+
+  \section{Описание схемы распараллеливания}
+  Параллельная модификация заключается в разделении основного массива точек полученного после 2-го шага алгоритма на несколько частей для последующей обработки в нескольких потоках. Следующие шаги остаются неизменными, за исключением того, что выполняются они не на всем массиве точек, а только на части, выделенной единице параллелизма.
+
+  \newpage
+
+  \section{Описание схемы параллелизации}
+
+    \subsection{OpenMP}
+    \textbf{Метод параллелизации:}\\
+  \begin{enumerate}
+    \item Определить количество задействованных потоков.
+    \item Определить идентификатор текущего потока.
+    \item Вычислить левую и правую границу в исходном наборе точек для обработки в текущем потоке.
+    \item Выполнить алгоритм построения выпуклой оболочки.
+    \item В критической секции объединить результаты работы всех потоков.
+    \item Выполнить основной алгоритм на результирующем массиве точек.
+  \end{enumerate}
+
+   \subsection{TBB}
+   Изначально объявлен класс ConvexHullTbbMediator, который реализует:
+   \begin{itemize}
+       \item Дефолтный конструктор по умолчанию
+       \item Пустой конструктор копирования с маркерным вторым параметром. 
+       \item Оператор "invoke"\ , принимающий диапазон точек, который выполняет основной алгоритм на заданном диапазоне и сохраняет результат в поле класса.
+       \item Метод "join"\ , который объединяет свой стек со стеком переданного аргументом объекта.
+   \end{itemize}
+    \textbf{Метод параллелизации:}
+  \begin{enumerate}
+    \item Создание инстанса класса ConvexHullTbbMediator.
+        \item Вызов функции tbb::parallel\_for с диапазоном исходных точек и объектом ConvexHullTbbMediator.
+        \item Выполнить основной алгоритм на результирующем массиве точек.
+  \end{enumerate}
+ 
+
+  \newpage
+
+  \section{Результаты экспериментов}
+  Каждый эксперимент заключается в определении размера множества входных данных, изначально массив заполняется 4 точками, которые являются выпуклой оболочкой, далее вектор дополняется случайной точкой, которая не лежит на оболочке, до определенного размера. После чего запускает основной алгоритм, подсчитывается его время выполнения, данные заносятся в таблицу (выбирается лучший результат из 3х замеров).
+ 
+  \noindent\textbf{Результаты измерения времени работы (в миллисекундах):}\\\\
+    \begin{tabular}{|c | c | c | c | c | c |} 
+      \hline
+      Технология / Размер входных данных & $10^3$ & $10^4$ & $10^5$ & $10^6$ & $10^7$ \\
+      \hline
+      OpenMP & 2 & 36  & 200 & 1450 & 11924 \\ 
+      \hline
+      TBB & 3 & 41  & 186 & 1382 & 10703 \\ 
+      \hline
+    \end{tabular}
+
+  \newpage
+
+  \section{Вывод}
+  Основываясь на полученных в результате экспериментов данных, можно сделать вывод: обе библиотеки показали примерно равные результаты в приведенных экспериментах, что говорит об их схожей степени эффективности.
+
+  \newpage
+
+  \section{Заключение}
+  В ходе выполнения работы были изучены и успешно реализованы 2 варианта параллельной версии алгоритма построения выпуклой оболочки Греэхема.
+ 
+  В ходе экспериментов удалось выяснить, что обе реализации имеют примерно равное время выполнения.
+ 
+    Следовательно, выбор библиотеки может быть сделан на основе удобства интеграции конкретного функционала в пользовательское приложение. В то же время возможно использовать оба механизма для наибольшей эффективности в эксплуатации. Так OpenMP больше подходит для параллелизации независимых вычислений внутри цикла, а TBB предоставляет удобный интерфейс для редуцирования результатов работы условных единиц параллелизации.
+ 
+  \newpage
+
+    \section{Литература}
+    
+    \begin{enumerate}
+        \item Справочник по библиотекам OpenMP // Справочник по библиотекам OpenMP URL: \\https://learn.microsoft.com/ru-ru/cpp/parallel/openmp/reference/openmp-library-reference?view=msvc-170 (дата обращения: 04.05.2023).
+        \item Threading Building Blocks // Threading Building Blocks URL: https://oneapi-src.github.io/oneTBB/ (дата обращения: 04.05.2023).
+        \item Построение минимальных выпуклых оболочек // habr.com URL:\\ https://habr.com/ru/articles/144921/ (дата обращения: 04.05.2023).
+        \item  Алгоритм Грэхема // wikipedia.org URL:\\ https://ru.wikipedia.org/wiki/Алгоритм\_Грэхема (дата обращения: 04.05.2023). 
+    \end{enumerate}
+
+  \newpage
+
+  \section{Приложение}
+
+  \subsection{Общая часть}
+    \subsubsection{main.cpp}
+  \begin{lstlisting}
+#include <gtest/gtest.h>
+#include "./graham_con_hull_omp.h"
+
+TEST(ConvexHullOMP, EmptyVector) {
+    std::vector<Point> points;
+    auto hull = constructConvexHull(points);
+    EXPECT_TRUE(hull.empty());
+}
+
+TEST(ConvexHullOMP, ThreePoints) {
+    std::vector<Point> points{ {0, 0}, {1, 1}, {0, 1} };
+    auto hull = constructConvexHull(points);
+    EXPECT_EQ(hull.size(), 3);
+    EXPECT_EQ(hull[0], Point(0, 0));
+    EXPECT_EQ(hull[1], Point(1, 1));
+    EXPECT_EQ(hull[2], Point(0, 1));
+}
+
+TEST(ConvexHullOMP, FourPoints) {
+    std::vector<Point> points{ {0, 0}, {1, 1}, {0, 1}, {1, 0} };
+    auto hull = constructConvexHull(points);
+    EXPECT_EQ(hull.size(), 4);
+    EXPECT_EQ(hull[0], Point(0, 0));
+    EXPECT_EQ(hull[1], Point(1, 0));
+    EXPECT_EQ(hull[2], Point(1, 1));
+    EXPECT_EQ(hull[3], Point(0, 1));
+}
+
+TEST(ConvexHullOMP, TenPoints) {
+    std::vector<Point> points{
+        {0, 0}, {10, 10}, {0, 10}, {10, 0}, {11, 11},
+        {5, 5}, {3, 1}, {2, 4}, {7, 3}, {11, 11}
+    };
+    auto hull = constructConvexHull(points);
+    EXPECT_EQ(hull.size(), 4);
+    EXPECT_EQ(hull[0], Point(0, 0));
+    EXPECT_EQ(hull[1], Point(10, 0));
+    EXPECT_EQ(hull[2], Point(11, 11));
+    EXPECT_EQ(hull[3], Point(0, 10));
+}
+
+TEST(ConvexHullOMP, PointsInALine) {
+    std::vector<Point> points{ {0, 0}, {1, 0}, {2, 0}, {3, 0} };
+    auto hull = constructConvexHull(points);
+    EXPECT_EQ(hull.size(), 2);
+    EXPECT_EQ(hull[0], Point(0, 0));
+    EXPECT_EQ(hull[1], Point(3, 0));
+}
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+  \end{lstlisting}
+  \newpage
+  \subsubsection{graham\_convex\_hull.h}
+  \begin{lstlisting}
+#include <vector>
+
+struct Point {
+    int x;
+    int y;
+
+    Point(int x, int y) : x(x), y(y) {}
+
+    bool operator==(const Point& other) const {
+        return x == other.x && y == other.y;
+    }
+};
+
+enum class Orientation {
+    COLLINEAR,
+    LEFT,
+    RIGHT,
+};
+
+Orientation getOrientation(const Point& p1, const Point& p2, const Point& anchor);
+
+bool comparePointsOnAnchor(const Point& p1, const Point& p2, const Point& anchor);
+
+std::vector<Point> constructConvexHull(const std::vector<Point>& points);
+  \end{lstlisting}
+  \newpage
+    \subsection{OpenMP - graham\_convex\_hull.cpp}
+  \begin{lstlisting}
+#include <omp.h>
+#include <iostream>
+#include <algorithm>
+#include <iterator>
+#include "../../../modules/task_2/strogantsev_a_graham_con_hull_omp/graham_con_hull_omp.h"
+
+
+Orientation getOrientation(const Point& p1, const Point& p2, const Point& anchor) {
+    int value = (p2.y - p1.y) * (anchor.x - p2.x) - (p2.x - p1.x) * (anchor.y - p2.y);
+    if (value == 0) return Orientation::COLLINEAR;
+    if (value > 0) return Orientation::LEFT;
+    return Orientation::RIGHT;
+}
+
+bool comparePointsOnAnchor(const Point& p1, const Point& p2, const Point& anchor) {
+    auto orientation = getOrientation(anchor, p1, p2);
+    if (orientation == Orientation::COLLINEAR)
+        return ((p1.x - anchor.x) * (p1.x - anchor.x) + (p1.y - anchor.y) * (p1.y - anchor.y))
+        < ((p2.x - anchor.x) * (p2.x - anchor.x) + (p2.y - anchor.y) * (p2.y - anchor.y));
+    return orientation == Orientation::RIGHT;
+}
+
+std::vector<Point> constructConvexHullSeq(const std::vector<Point>& points) {
+    if (points.size() < 3) return points;
+
+    auto pointsCopy = std::vector<Point>(points.begin(), points.end());
+
+    Point anchor = *std::min_element(pointsCopy.begin(), pointsCopy.end(), [](const Point& p1, const Point& p2) {
+        if (p1.y == p2.y) return p1.x < p2.x;
+        return p1.y < p2.y;
+    });
+
+    std::sort(pointsCopy.begin(), pointsCopy.end(), [&](const Point& p1, const Point& p2) {
+        return comparePointsOnAnchor(p1, p2, anchor);
+    });
+
+    std::vector<Point> stack;
+    stack.push_back(pointsCopy[0]);
+    stack.push_back(pointsCopy[1]);
+    stack.push_back(pointsCopy[2]);
+
+    for (int i = 3; i < pointsCopy.size(); i++) {
+        while (stack.size() > 1 &&
+            getOrientation(stack[stack.size() - 2], stack.back(), pointsCopy[i]) != Orientation::RIGHT)
+            stack.pop_back();
+        stack.push_back(pointsCopy[i]);
+    }
+    return stack;
+}
+
+std::vector<Point> constructConvexHull(const std::vector<Point>& points) {
+    if (points.empty()) return points;
+
+    Point anchor = *std::min_element(points.begin(), points.end(), [](const Point& p1, const Point& p2) {
+        if (p1.y == p2.y) return p1.x < p2.x;
+        return p1.y < p2.y;
+    });
+
+    auto pointsCopy = points;
+    std::sort(pointsCopy.begin(), pointsCopy.end(), [&](const Point& p1, const Point& p2) {
+        return comparePointsOnAnchor(p1, p2, anchor);
+    });
+
+    if (points.size() < 3) return pointsCopy;
+
+    std::vector<Point> stack;
+    stack.push_back(pointsCopy[0]);
+    stack.push_back(pointsCopy[1]);
+
+#pragma omp parallel
+    {
+        const int threadId = omp_get_thread_num();
+        const int threadCount = omp_get_num_threads();
+        const int step = (points.size() - 2) / threadCount + (((points.size() - 2) % threadCount) != 0);
+        std::vector<Point> localStack;
+        for (int i = 2 + threadId * step;
+            i < std::min(static_cast<int>(pointsCopy.size()), 2 + step * (threadId + 1)); i++) {
+            while (localStack.size() > 1 &&
+                getOrientation(localStack[localStack.size() - 2], localStack.back(), pointsCopy[i]) !=
+                Orientation::RIGHT)
+                localStack.pop_back();
+            localStack.push_back(pointsCopy[i]);
+        }
+#pragma omp critical
+        {
+            std::copy(localStack.begin(), localStack.end(), std::back_inserter(stack));
+        }
+    }
+    return constructConvexHullSeq(stack);
+}
+  \end{lstlisting}
+  \newpage
+    \subsection{TBB - graham\_convex\_hull.cpp}
+  \begin{lstlisting}
+ #include <tbb/tbb.h>
+#include <iostream>
+#include <algorithm>
+#include <iterator>
+#include "../../../modules/task_3/strogantsev_a_graham_con_hull_tbb/graham_con_hull_tbb.h"
+
+
+enum class Orientation {
+    COLLINEAR,
+    LEFT,
+    RIGHT,
+};
+
+Orientation getOrientation(const Point& p1, const Point& p2, const Point& anchor) {
+    int value = (p2.y - p1.y) * (anchor.x - p2.x) - (p2.x - p1.x) * (anchor.y - p2.y);
+    if (value == 0) return Orientation::COLLINEAR;
+    if (value > 0) return Orientation::LEFT;
+    return Orientation::RIGHT;
+}
+
+bool comparePointsOnAnchor(const Point& p1, const Point& p2, const Point& anchor) {
+    auto orientation = getOrientation(anchor, p1, p2);
+    if (orientation == Orientation::COLLINEAR)
+        return ((p1.x - anchor.x) * (p1.x - anchor.x) + (p1.y - anchor.y) * (p1.y - anchor.y))
+        < ((p2.x - anchor.x) * (p2.x - anchor.x) + (p2.y - anchor.y) * (p2.y - anchor.y));
+    return orientation == Orientation::RIGHT;
+}
+
+std::vector<Point> constructConvexHullSeq(const std::vector<Point>& points) {
+    if (points.size() < 3) return points;
+
+    auto pointsCopy = std::vector<Point>(points.begin(), points.end());
+
+    Point anchor = *std::min_element(pointsCopy.begin(), pointsCopy.end(), [](const Point& p1, const Point& p2) {
+        if (p1.y == p2.y) return p1.x < p2.x;
+        return p1.y < p2.y;
+        });
+
+    std::sort(pointsCopy.begin(), pointsCopy.end(), [&](const Point& p1, const Point& p2) {
+        return comparePointsOnAnchor(p1, p2, anchor);
+        });
+
+    std::vector<Point> stack;
+    stack.push_back(pointsCopy[0]);
+    stack.push_back(pointsCopy[1]);
+    stack.push_back(pointsCopy[2]);
+
+    for (int i = 3; i < pointsCopy.size(); i++) {
+        while (stack.size() > 1 &&
+            getOrientation(stack[stack.size() - 2], stack.back(), pointsCopy[i]) != Orientation::RIGHT)
+            stack.pop_back();
+        stack.push_back(pointsCopy[i]);
+    }
+    return stack;
+}
+
+struct ConvexHullTbbMediator {
+    mutable std::vector<Point> stack;
+
+    ConvexHullTbbMediator() = default;
+    ConvexHullTbbMediator(const ConvexHullTbbMediator& s, tbb::split) {}
+
+    void operator()(const tbb::blocked_range<std::vector<Point>::iterator>& points) {
+        for (const Point& point : points) {
+            while (stack.size() > 1 &&
+                getOrientation(stack[stack.size() - 2], stack.back(), point) != Orientation::RIGHT)
+                stack.pop_back();
+            stack.push_back(point);
+        }
+    }
+    void join(const ConvexHullTbbMediator& r) {
+        std::copy(r.stack.begin(), r.stack.end(), std::back_inserter(stack));
+    }
+};
+
+std::vector<Point> constructConvexHull(const std::vector<Point>& points) {
+    if (points.empty()) return points;
+
+    Point anchor = *std::min_element(points.begin(), points.end(), [](const Point& p1, const Point& p2) {
+        if (p1.y == p2.y) return p1.x < p2.x;
+        return p1.y < p2.y;
+        });
+
+    auto pointsCopy = points;
+    std::sort(pointsCopy.begin(), pointsCopy.end(), [&](const Point& p1, const Point& p2) {
+        return comparePointsOnAnchor(p1, p2, anchor);
+        });
+
+    if (points.size() < 3) return pointsCopy;
+
+    ConvexHullTbbMediator mediator;
+    tbb::parallel_reduce(
+        tbb::blocked_range<std::vector<Point>::iterator>(pointsCopy.begin(), pointsCopy.end()),
+        mediator);
+
+    return constructConvexHullSeq(mediator.stack);
+}
+    \end{lstlisting}
+
+\end{document}
