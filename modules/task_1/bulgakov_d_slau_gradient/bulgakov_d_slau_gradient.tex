@@ -1,0 +1,1018 @@
+\documentclass[14pt, russian]{extarticle}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage{babel}
+\usepackage[a4paper,
+left=2cm,
+right=2cm,
+top=2cm,
+bottom=2cm]{geometry}
+\usepackage{color}
+\usepackage{mathtools}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{tocloft}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+
+\setlength{\parindent}{0.8cm}
+\setlength{\parskip}{0.4cm}
+\renewcommand{\contentsname}{}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=none,
+	language=C++,
+	aboveskip=3mm,
+	belowskip=3mm,
+	showstringspaces=false,
+	columns=flexible,
+	basicstyle={\small\ttfamily},
+	numbers=none,
+	numberstyle=\tiny\color{gray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{dkgreen},
+	stringstyle=\color{mauve},
+	breaklines=true,
+	breakatwhitespace=true,
+	tabsize=4
+}
+
+\title{}
+\author{}
+\date{}
+
+\begin{document}
+	\begin{titlepage}
+		\begin{center}
+			{\bfseries МИНИСТЕРСТВО НАУКИ И ВЫСШЕГО ОБРАЗОВАНИЯ \\
+				РОССИЙСКОЙ ФЕДЕРАЦИИ}
+			\\
+			Федеральное государственное автономное образовательное учреждение высшего образования 
+			\\
+			{\bfseries «Национальный исследовательский Нижегородский государственный университет им. Н.И. Лобачевского»\\(ННГУ)
+				\\Институт информационных технологий, математики и механики} \\
+		\end{center}
+		
+		\vspace{8em}
+		
+		\begin{center}
+			ОТЧЁТ \\ по лабораторной работе \\
+			«Решение систем линейных уравнений методом сопряженных градиентов.»
+		\end{center}
+		
+		\vspace{5em}
+		
+		
+		\begin{flushright}
+			{\bfseries Выполнил:} \\студент группы 382008-1\\Булгаков Д.Э.\\ 
+			{\bfseries Проверил:} \\младший научный сотрудник\\Нестеров А.Ю.
+		\end{flushright}
+		
+		
+		\vspace{\fill}
+		
+		\begin{center}
+			Нижний Новгород\\2023
+		\end{center}
+		
+	\end{titlepage}
+	
+	% Содержание
+	\tableofcontents
+	\thispagestyle{empty}
+	\newpage
+	
+	\pagestyle{plain}
+	\setcounter{page}{3}
+
+	% Введение
+        \section{Введение}        
+        Система линейных алгебраических уравнений (линейная система, также употребляются аббревиатуры СЛАУ, СЛУ) – система уравнений, каждое уравнение в которой является линейным – алгебраическим уравнением первой степени. 
+        \par
+        Решением СЛАУ называют всякую упорядоченную совокупность чисел, если элементы этой совокупности, подставленные в заданном порядке вместо неизвестных обращают каждое уравнение СЛАУ в тождество.
+        Задача является одной из классических для линейной алгебры и применяется во многих прикладных направлениях, в том числе в линейном программировании, эконометрике и т.п.
+        \par 
+        Метод сопряженных градиентов – один из наиболее известных итерационных методов решения СЛАУ. Применяется для СЛАУ с симметричной, положительно определенной матрицей.
+
+        \newpage
+
+        % Постановка задачи
+        \section{Постановка задачи}
+        Необходимо написать 3 варианта программы для решения системы линейных алгебраических уравнений с использованием различных технологий на языке C++, а именно:
+        \begin{itemize}
+            \item Стандартный набор инструментов языка,
+            \item Библиотека OMP,
+            \item Библиотека TBB
+        \end{itemize}
+        \par
+        Результатом работы программы должен быть вектор неизвестных $х$, при которых выполняются все уравнения системы типа $Ax = b$.
+        \par 
+        С помощью стандартных инструментов языка будет реализована последовательная версия алгоритма, а с библиотеками – параллельная. Для проверки правильности работы программы, используется фреймворк GoogleTest. Для покрытия большей части кода требуется написать не меньше 5 тестов.
+        \par 
+        По результатам работы программ необходимо сравнить их скорости выполнения и сделать выводы.
+
+        \newpage
+
+        % Описание алгоритма
+        \section{Описание алгоритма}
+        {\noindent\textbf{Входные данные:}\\\indent}
+        Дана матрица A и вектор b вида:
+        \begin{equation} 
+         A=
+           \begin{pmatrix}
+                a_{0,0} &  a_{0,1} & ... & a_{0,n-1}\\
+                a_{1,0} & a_{1,1} & ... & a_{1,n-1}\\
+                \ ...  & ... &  ... &  ... \\
+                a_{n-1,0} & a_{n-1,1} & ... & a_{n-1,n-1}\\
+           \end{pmatrix}
+         , b= 
+           \begin{pmatrix}
+                b_{0} \\
+                b_{1} \\
+                \ ...  \\
+                b_{n-1} \\
+          \end{pmatrix}
+        \end{equation}  
+        Причем матрица ${A}$ симметричная и положительно определенная, то есть удовлетворяет следующим условиям: 
+        \begin{itemize}
+            \item[-] $A = A^{T}$ (симметричность)
+            \item[-] $x^{T}*A*x > 0$ (положительная определенность)
+        \end{itemize}
+        {\noindent\textbf{Алгоритм:}\\\indent}
+        Алгоритм является итерационным и выполняется до тех пор, пока величина невязки не будет меньше допустимой. Дополнительно поставлено ограничение на количество итераций не больше $n$ (размера вектора $x$), так задача для квадратичного функционала сходится не более чем за $n$ итераций. Одна итерация данного алгоритма выглядит следующим образом:
+        \begin{enumerate}
+            \item Выбираем начальное приближение вектора $x_{0}$, по умолчанию
+            вектор заполнен нулями.
+            \item Вычисляем вспомогательное значение $\alpha_{k}$.
+                \begin{equation}
+                    \alpha_{k} = \frac{r_{k} * r_{k}}{p_{k} * A * p_{k}},
+                \end{equation}
+                где $r_{k}$ – невязка, $A$ – матрица, $p_{k}$ – градиент
+            \item Вычисляем новое приближение $x_{k+1}$.
+                \begin{equation}
+                    x_{k+1} = x_{k+1} + \alpha_{k} * p_{k}
+                \end{equation}
+            \item Вычисляем новое значение невязки $r_{k+1}$
+                \begin{equation}
+                    r_{k+1} = r_{k} - \alpha_{k} * A * p_{k}
+                \end{equation}
+            \item Если величина невязки меньше допустимой – выходим.
+            \item Вычисляем вспомогательное значение $\beta_{k}$
+                \begin{equation}
+                    \beta_{k} = \frac{r_{k+1} * r_{k+1}}{r_{k} * r_{k}}
+                \end{equation}
+            \item Вычисляем новое значение градиента $p_{k+1}$
+                \begin{equation}
+                    \beta_{k} = r_{k + 1} + \beta_{k} * p_{k}
+                \end{equation}
+        \end{enumerate}
+        {\noindent\textbf{Результат:}\\\indent}
+        Результатом работы является вектор $x$ – приближенное решение системы уравнений $Ax = b$
+        
+        \newpage
+
+        % Описание схемы распараллеливания
+        \section{Описание схемы распараллеливания}
+        Каждая итерация алгоритма выполняется последовательно, а значит распараллеливание данных секций будет не разумно из-за необходимости синхронизации потоков. Наиболее эффективным методом в данном случае будет являться распараллеливание ресурсоемких вычислений таких, как перемножение матрицы на вектор или перемножение векторов. Так же можно параллельно вычислять значение нового приближения и невязки.
+        {\par\noindent\textbf{Умножение матрицы на вектор:}\\\indent}
+        Для организации параллельных матричных вычислений используется ленточное разбиение матрицы, где каждому потоку выделяется непрерывный набор строк.
+        Вектор для умножения является общим для каждого потока. Данная схема позволяет, каждому потоку заполнять определенное количество не пересекающихся значений в результирующем векторе, равное количеству выделенных строк.
+        {\par\noindent\textbf{Умножение вектора на вектор:}\\\indent}
+        Для организации данных вычислений, каждому потоку выделяется определенный подвектор векторов для перемножения. Далее, в каждом потоке последовательно выполняется вычисления результата перемножения данных подвекторов. Заключительным этапом является редукция операции сложения для объединения значений результатов перемножения с каждого потока.
+
+        \newpage
+
+        % Описание программной реализации
+        \section{Описание программной реализации}
+        Для генерации входных значений, удовлетворяющих требованиям алгоритма, были реализованы следующие функции: \verb|generateMatrix| и \\ \verb|generateVector|, каждая из которых принимает на вход размер объекта для генерации и семечко (seed). \\
+        Структура файла с тестами \verb|main.cpp| является одинаковой для каждой реализации и представляет собой набор тестов с увеличивающейся размерностью входных данных.
+        \subsection{OpenMP-версия программы}
+        Данная версия программы содержит следующие файлы:
+        \begin{itemize}
+            \item \verb|main.cpp| (тесты)
+            \item \verb|slau_gradient.h| (заголовки функций)
+            \item \verb|slau_gradient.cpp| (реализация)
+        \end{itemize}
+        За параллельное вычисление решения СЛАУ отвечает функция \verb|omp_solve|, которая на вход принимает два параметра: матрицу $A$ и вектор $b$. Это является основным методом, в котором выполняется алгоритм. Выходным значением функции является объект типа \verb|std::vector|.\\
+        Для параллельного вычисления перемножения матрицы на вектор используется вспомогательная функция \verb|omp_matrix_vec|, которая принимает на вход матрицу $A$ и вектор $b$. Внутри данного метода используется директивы \\\verb|omp и parallel|. \\
+        Для параллельного вычисления перемножения вектора на вектор используется вспомогательная функция \verb|omp_vec_vec|, которая принимает на вход два вектора $a$ и $b$. Внутри данного метода используется директивы \\\verb|omp, parallel и reduction|. \\
+
+        \newpage
+        \subsection{TBB-версия программы}
+        Данная версия программы содержит следующие файлы:
+        \begin{itemize}
+            \item \verb|main.cpp| (тесты)
+            \item \verb|slau_gradient.h| (заголовки функций)
+            \item \verb|slau_gradient.cpp| (реализация)
+        \end{itemize}
+        За параллельное вычисление решения СЛАУ отвечает функция \verb|tbb_solve|, которая на вход принимает два параметра: матрицу $A$ и вектор $b$. Это является основным методом, в котором выполняется алгоритм. Выходным значением функции является объект типа \verb|std::vector|.\\
+        Для параллельного вычисления перемножения матрицы на вектор используется вспомогательная функция \verb|tbb_matrix_vec|, которая принимает на вход матрицу $A$ и вектор $b$. 
+        Для параллельного вычисления перемножения вектора на вектор используется вспомогательная функция \verb|tbb_vec_vec|, которая принимает на вход два вектора $a$ и $b$. Для данного метода был написан класс-функтор
+        \verb|VecVecFunctor|
+
+        \newpage
+
+        % Результаты экспериментов
+        \section{Результаты экспериментов}
+            Для проверки результатов работы программ и сравнения скорости выполнения было написано 5 автоматических тестов со следующими размерами входных данных:
+            \begin{itemize}
+                \item Количество неизвестных значений 200
+                \item Количество неизвестных значений 400
+                \item Количество неизвестных значений 600
+                \item Количество неизвестных значений 800
+                \item Количество неизвестных значений 1000
+            \end{itemize}
+            Для измерения времени были использованы следующие функции
+            \begin{itemize}
+                \item \verb|clock()| для последовательной версии
+                \item \verb|omp_get_wtime()| для OpenMP версии
+                \item \verb|tbb::tick_count::now()| для tbb версии
+            \end{itemize}
+            Результаты времени оказались следующими:
+
+        	\begin{table}[ht]
+		\centering
+		\begin{tabular}{| c | c | c | c |}
+			\hline
+			Размер вектора $x$ & Время (Seq) & Время (OpenMP) & Время (TBB) \\ [0.5ex]
+			\hline
+			200 & 0.009 & 0.181 & 0.211 \\
+			\hline
+			400 & 0.036 & 0.061 & 0.055 \\
+			\hline
+			600 & 0.076 & 0.013 & 0.032 \\
+			\hline
+			800 & 0.134 & 0.016 & 0.027 \\
+   			\hline
+			1000 & 9.373 & 1.941 & 1.869 \\
+			\hline
+		\end{tabular}
+	\end{table}
+
+        \newpage
+
+        % Выводы из результатов
+        \section{Выводы из результатов}
+
+        По результатам можно сделать вывод, что реализации при помощи TBB и OpenMP работают примерно с одинаковой скоростью и на большом наборе данных с большим отрывом обгоняют последовательную версию программы, поэтому использование параллелизма для данного алгоритма полностью оправдано. Можно также заметить, что при размере вектора $size(x) < 600$, последовательная версия выполняется быстрее чем параллельные, что связано с накладными расходов на параллелизм.
+
+        \newpage
+
+        % Заключение
+        \section{Заключение}
+        Данная работа позволила мне ознакомиться с параллелизмом на уровне
+        потоков, а также рассмотреть интерфейсы библиотек OpenMP и TBB для
+        C++.
+        \par
+        В ходе работы были написаны 3 программы. Две параллельных (TBB и OpenMP) и одна последовательная. В результате экспериментов удалось выяснить, что параллельная реализация значительно быстрее последовательной, но при больших объемах данных, иначе расходы на параллелизм не оправдывают его использование.
+
+        \newpage
+
+        % Литература
+	\section{Литература}
+	\begin{enumerate}
+		\item en.wikipedia.org: сайт – URL:\\  
+            https://en.wikipedia.org/wiki/Conjugate\_gradient\_method
+            (дата обращения: 17.05.2023). 
+            —  Текст: электронный.
+		\item www.hpcc.unn.ru: сайт – URL: http://www.hpcc.unn.ru/?dir=847 (дата обращения: 17.05.2023). —  Текст: электронный.
+	\end{enumerate}
+	\newpage
+
+        % Приложение
+	\section{Приложение}
+        \subsection{OpenMP : main.cpp}
+        \begin{lstlisting}
+        // Copyright 2023 Bulgakov Daniil
+
+
+#include <gtest/gtest.h>
+
+#include "../../../modules/task_2/bulgakov_d_slau_gradient_omp/slau_gradient.h"
+
+
+const double SML = 1.0e-4;
+
+void GoogleAssertNear(dvec a, dvec b, double smol) {
+    for (int i = 0; i < a.size(); i++) {
+        for (int j = 0; j < b.size(); j++) {
+            ASSERT_NEAR(a[i], b[i], smol);
+        }
+    }
+}
+
+TEST(Sequential, Test_1) {
+    dmat A =  generateMatrix(10, 423);
+    dvec ans = generateVector(10, 234);
+    dvec B = matrix_vec(A, ans);
+    dvec omp_solved = omp_solve(A, B);
+    dvec solved = solve(A, B);
+    GoogleAssertNear(omp_solved, solved, SML);
+}
+
+TEST(Sequential, Test_2) {
+    dmat A =  generateMatrix(50, 243);
+    dvec ans = generateVector(50, 423);
+    dvec B = matrix_vec(A, ans);
+    dvec omp_solved = omp_solve(A, B);
+    dvec solved = solve(A, B);
+    GoogleAssertNear(omp_solved, solved, SML);
+}
+
+TEST(Sequential, Test_3) {
+    dmat A =  generateMatrix(100, 4442);
+    dvec ans = generateVector(100, 2444);
+    dvec B = matrix_vec(A, ans);
+    dvec omp_solved = omp_solve(A, B);
+    dvec solved = solve(A, B);
+    GoogleAssertNear(omp_solved, solved, SML);
+}
+
+TEST(Sequential, Test_4) {
+    dmat A =  generateMatrix(200, 15);
+    dvec ans = generateVector(200, 51);
+    dvec B = matrix_vec(A, ans);
+    dvec omp_solved = omp_solve(A, B);
+    dvec solved = solve(A, B);
+    GoogleAssertNear(omp_solved, solved, SML);
+}
+
+TEST(Sequential, Test_5) {
+    dmat A =  generateMatrix(500, 155);
+    dvec ans = generateVector(500, 551);
+    dvec B = matrix_vec(A, ans);
+    dvec omp_solved = omp_solve(A, B);
+    dvec solved = solve(A, B);
+    GoogleAssertNear(omp_solved, solved, SML);
+}
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+        \end{lstlisting}
+        
+        \subsection{OpenMP : slau\_gradient.h}
+        \begin{lstlisting}
+        // Copyright 2023 Bulgakov Daniil
+
+
+#ifndef MODULES_TASK_2_BULGAKOV_D_SLAU_GRADIENT_OMP_SLAU_GRADIENT_H_
+#define MODULES_TASK_2_BULGAKOV_D_SLAU_GRADIENT_OMP_SLAU_GRADIENT_H_
+
+
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <numeric>
+#include <random>
+#include <iostream>
+
+const double SMOL = 1.0e-10;
+
+using dvec = std::vector<double>;
+using dmat = std::vector<dvec>;
+
+//----------------------------- Test Data Generation --------------------------
+
+/**
+ * @brief generate random simmetric positive defined (spd) matrix
+ * 
+ * @param size size of matrix
+ * @param seed seed
+ * @return matrix (dmat, std::vector<std::vector<double>>)
+ */
+dmat generateMatrix(int size, unsigned int seed);
+
+/**
+ * @brief generate random vector
+ * 
+ * @param size vector size
+ * @param seed seed
+ * @return vector
+ */
+dvec generateVector(int size, unsigned int seed);
+
+
+//----------------------------- Sequential Computing Methods ------------------
+
+/**
+ * @brief scalar multiplication of vectors
+ * 
+ * @param a first vector
+ * @param b second vector
+ * @return result value 
+ */
+double vec_vec(const dvec &a, const dvec &b);
+
+/**
+ * @brief matrix-vector multiplication
+ * 
+ * @param a matrix (dmat, std::vector<std::vector<double>>)
+ * @param b vector
+ * @return result vector
+ */
+dvec matrix_vec(const dmat &a, const dvec &b);
+
+/**
+ * @brief linear combination of vectors
+ * 
+ * @param ma scalar value mult for first vector
+ * @param a first vector
+ * @param mb scalar value mult for second vector
+ * @param b second vector
+ * @return result vector
+ */
+dvec vec_vec_comb(double ma, const dvec& a, double mb, const dvec& b);
+
+/**
+ * @brief vector normalizing
+ * 
+ * @param a vector
+ * @return magnitude 
+ */
+double vec_norm(const dvec& a);
+
+//----------------------------- Parallel Computing Methods --------------------
+
+/**
+ * @brief parallel matrix-vector multiplication
+ * 
+ * @param a matrix (dmat, std::vector<std::vector<double>>)
+ * @param b vector
+ * @return result vector
+ */
+dvec omp_matrix_vec(const dmat &a, const dvec &b);
+
+/**
+ * @brief parallel scalar multiplication of vectors
+ * 
+ * @param a first vector
+ * @param b second vector
+ * @return result value 
+ */
+double omp_vec_vec(const dvec &a, const dvec &b);
+
+//----------------------------- Conjugate Method Algorithm --------------------
+
+/**
+ * @brief conjugate gradient method solver
+ * 
+ * @param a matrix (dmat, std::vector<std::vector<double>>)
+ * @param b vector
+ * @return result 
+ */
+dvec solve(const dmat &a, const dvec& b);
+
+/**
+ * @brief parallel conjugate gradient method solver
+ * 
+ * @param a matrix (dmat, std::vector<std::vector<double>>)
+ * @param b vector
+ * @return result 
+ */
+dvec omp_solve(const dmat &a, const dvec& b);
+
+#endif  // MODULES_TASK_2_BULGAKOV_D_SLAU_GRADIENT_OMP_SLAU_GRADIENT_H_
+        \end{lstlisting}
+
+        \subsection{OpenMP : slau\_gradient.cpp}
+        \begin{lstlisting}
+        // Copyright 2023 Bulgakov Daniil
+
+#include "../../../modules/task_2/bulgakov_d_slau_gradient_omp/slau_gradient.h"
+
+#include <omp.h>
+#include <time.h>
+
+//----------------------------- Test Data Generation --------------------------
+
+dmat generateMatrix(int size, unsigned int seed) {
+    dmat res = dmat(size, std::vector<double>(size));
+    dvec v = generateVector(size, seed);
+    for (int i = 0; i < size; ++i) {
+        for (int j = 0; j < size; ++j) {
+            res[i][j] = v[i] * v[j];
+        }
+        res[i][i] += size;
+    }
+    return res;
+}
+dvec generateVector(int size, unsigned int seed) {
+    dvec res = dvec(size);
+    std::mt19937 mt(seed);
+    std::uniform_real_distribution<double> urd(-5, 5);
+    for (int i = 0; i < size; i++) {
+        res[i] = urd(mt);
+    }
+    return res;
+}
+
+//----------------------------- Sequential Computing Methods ------------------
+
+double vec_vec(const dvec &a, const dvec &b) {
+    return std::inner_product(a.begin(), a.end(), b.begin(), 0.0);
+}
+
+dvec matrix_vec(const dmat &a, const dvec &b) {
+    dvec res(a.size());
+    for (int i = 0; i < a.size(); i++) {
+        res[i] =  vec_vec(a[i], b);
+    }
+    return res;
+}
+
+dvec vec_vec_comb(double ma, const dvec& a, double mb, const dvec& b) {
+    dvec res(a.size());
+    for (int i = 0; i < a.size(); i++) {
+        res[i] = ma * a[i] + mb * b[i];
+    }
+    return res;
+}
+
+double vec_norm(const dvec& a) {
+    return sqrt(vec_vec(a, a));
+}
+
+//----------------------------- Parallel Computing Methods --------------------
+
+dvec omp_matrix_vec(const dmat &a, const dvec &b) {
+    dvec res(a.size());
+    #pragma omp parallel for
+    for (int i = 0; i < a.size(); i++) {
+        res[i] =  vec_vec(a[i], b);
+    }
+    return res;
+}
+
+double omp_vec_vec(const dvec &a, const dvec &b) {
+    double res = 0.0;
+    #pragma omp parallel for reduction(+:res)
+    for (int i = 0; i < a.size(); i++) {
+        res += a[i] * b[i];
+    }
+    return res;
+}
+
+//----------------------------- Conjugate Method Algorithm --------------------
+
+
+dvec solve(const dmat &a, const dvec& b) {
+    dvec res(a.size(), 0.0);
+
+    dvec r(b);
+    dvec p(r);
+
+    double begin = omp_get_wtime();
+
+    for (int i = 0; i < a.size(); i++) {
+        dvec r_prev;
+        dvec mv = matrix_vec(a, p);
+        r_prev = r;
+
+        double d = vec_vec(r, r) / std::max(vec_vec(p, mv), SMOL);
+        res = vec_vec_comb(1.0, res, d, p);
+        r = vec_vec_comb(1.0, r, -d, mv);
+
+        if (vec_norm(r) < SMOL) break;
+
+        double s = vec_vec(r, r) / std::max(vec_vec(r_prev, r_prev), SMOL);
+        p = vec_vec_comb(1.0, r, s, p);
+    }
+
+    double end = omp_get_wtime();
+
+    // std::cout << "SEQ TIME " << (end - begin) << std::endl;
+
+    return res;
+}
+
+dvec omp_solve(const dmat &a, const dvec& b) {
+    dvec res(a.size(), 0.0);
+
+    dvec r(b);
+    dvec p(r);
+
+    double begin = omp_get_wtime();
+
+    for (int i = 0; i < a.size(); i++) {
+        dvec r_prev;
+        dvec mv = omp_matrix_vec(a, p);
+        r_prev = r;
+
+        double d = omp_vec_vec(r, r) / std::max(omp_vec_vec(p, mv), SMOL);
+
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                res = vec_vec_comb(1.0, res, d, p);
+            }
+            #pragma omp section
+            {
+                r = vec_vec_comb(1.0, r, -d, mv);
+            }
+        }
+
+        if (vec_norm(r) < SMOL) break;
+
+        double s = omp_vec_vec(r, r) /
+                std::max(omp_vec_vec(r_prev, r_prev), SMOL);
+
+        p = vec_vec_comb(1.0, r, s, p);
+    }
+
+    double end = omp_get_wtime();
+
+    // std::cout << "PARALLEL TIME " << (end - begin) << std::endl;
+
+    return res;
+}
+        \end{lstlisting}
+
+        \subsection{TBB : main.cpp}
+        \begin{lstlisting}
+        // Copyright 2023 Bulgakov Daniil
+
+
+#include <gtest/gtest.h>
+
+#include "../../../modules/task_3/bulgakov_d_slau_gradient_tbb/slau_gradient.h"
+
+
+const double SML = 1.0e-4;
+
+void GoogleAssertNear(dvec a, dvec b, double smol) {
+    for (int i = 0; i < a.size(); i++) {
+        for (int j = 0; j < b.size(); j++) {
+            ASSERT_NEAR(a[i], b[i], smol);
+        }
+    }
+}
+
+TEST(Sequential, Test_1) {
+    dmat A =  generateMatrix(10, 423);
+    dvec ans = generateVector(10, 234);
+    dvec B = matrix_vec(A, ans);
+    dvec tbb_solved = tbb_solve(A, B);
+    dvec solved = solve(A, B);
+    GoogleAssertNear(tbb_solved, solved, SML);
+}
+
+TEST(Sequential, Test_2) {
+    dmat A =  generateMatrix(50, 243);
+    dvec ans = generateVector(50, 423);
+    dvec B = matrix_vec(A, ans);
+    dvec tbb_solved = tbb_solve(A, B);
+    dvec solved = solve(A, B);
+    GoogleAssertNear(tbb_solved, solved, SML);
+}
+
+TEST(Sequential, Test_3) {
+    dmat A =  generateMatrix(100, 4442);
+    dvec ans = generateVector(100, 2444);
+    dvec B = matrix_vec(A, ans);
+    dvec tbb_solved = tbb_solve(A, B);
+    dvec solved = solve(A, B);
+    GoogleAssertNear(tbb_solved, solved, SML);
+}
+
+TEST(Sequential, Test_4) {
+    dmat A =  generateMatrix(200, 15);
+    dvec ans = generateVector(200, 51);
+    dvec B = matrix_vec(A, ans);
+    dvec tbb_solved = tbb_solve(A, B);
+    dvec solved = solve(A, B);
+    GoogleAssertNear(tbb_solved, solved, SML);
+}
+
+TEST(Sequential, Test_5) {
+    dmat A =  generateMatrix(500, 155);
+    dvec ans = generateVector(500, 551);
+    dvec B = matrix_vec(A, ans);
+    dvec tbb_solved = tbb_solve(A, B);
+    dvec solved = solve(A, B);
+    GoogleAssertNear(tbb_solved, solved, SML);
+}
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+        \end{lstlisting}
+
+        \subsection{TBB : slau\_gradient.h}
+        \begin{lstlisting}
+        // Copyright 2023 Bulgakov Daniil
+
+
+#ifndef MODULES_TASK_3_BULGAKOV_D_SLAU_GRADIENT_TBB_SLAU_GRADIENT_H_
+#define MODULES_TASK_3_BULGAKOV_D_SLAU_GRADIENT_TBB_SLAU_GRADIENT_H_
+
+
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <numeric>
+#include <random>
+#include <iostream>
+
+const double SMOL = 1.0e-10;
+
+using dvec = std::vector<double>;
+using dmat = std::vector<dvec>;
+
+//----------------------------- Test Data Generation --------------------------
+
+/**
+ * @brief generate random simmetric positive defined (spd) matrix
+ * 
+ * @param size size of matrix
+ * @param seed seed
+ * @return matrix (dmat, std::vector<std::vector<double>>)
+ */
+dmat generateMatrix(int size, unsigned int seed);
+
+/**
+ * @brief generate random vector
+ * 
+ * @param size vector size
+ * @param seed seed
+ * @return vector
+ */
+dvec generateVector(int size, unsigned int seed);
+
+
+//----------------------------- Sequential Computing Methods ------------------
+
+/**
+ * @brief scalar multiplication of vectors
+ * 
+ * @param a first vector
+ * @param b second vector
+ * @return result value 
+ */
+double vec_vec(const dvec &a, const dvec &b);
+
+/**
+ * @brief matrix-vector multiplication
+ * 
+ * @param a matrix (dmat, std::vector<std::vector<double>>)
+ * @param b vector
+ * @return result vector
+ */
+dvec matrix_vec(const dmat &a, const dvec &b);
+
+/**
+ * @brief linear combination of vectors
+ * 
+ * @param ma scalar value mult for first vector
+ * @param a first vector
+ * @param mb scalar value mult for second vector
+ * @param b second vector
+ * @return result vector
+ */
+dvec vec_vec_comb(double ma, const dvec& a, double mb, const dvec& b);
+
+/**
+ * @brief vector normalizing
+ * 
+ * @param a vector
+ * @return magnitude 
+ */
+double vec_norm(const dvec& a);
+
+//----------------------------- Parallel Computing Methods --------------------
+
+/**
+ * @brief parallel matrix-vector multiplication
+ * 
+ * @param a matrix (dmat, std::vector<std::vector<double>>)
+ * @param b vector
+ * @return result vector
+ */
+dvec tbb_matrix_vec(const dmat &a, const dvec &b);
+
+/**
+ * @brief parallel scalar multiplication of vectors
+ * 
+ * @param a first vector
+ * @param b second vector
+ * @return result value 
+ */
+double tbb_vec_vec(const dvec &a, const dvec &b);
+
+//----------------------------- Conjugate Method Algorithm --------------------
+
+/**
+ * @brief conjugate gradient method solver
+ * 
+ * @param a matrix (dmat, std::vector<std::vector<double>>)
+ * @param b vector
+ * @return result 
+ */
+dvec solve(const dmat &a, const dvec& b);
+
+/**
+ * @brief parallel conjugate gradient method solver
+ * 
+ * @param a matrix (dmat, std::vector<std::vector<double>>)
+ * @param b vector
+ * @return result 
+ */
+dvec tbb_solve(const dmat &a, const dvec& b);
+
+#endif  // MODULES_TASK_3_BULGAKOV_D_SLAU_GRADIENT_TBB_SLAU_GRADIENT_H_
+        \end{lstlisting}
+
+        \subsection{TBB : slau\_gradient.cpp}
+        \begin{lstlisting}
+        // Copyright 2023 Bulgakov Daniil
+
+#include "../../../modules/task_3/bulgakov_d_slau_gradient_tbb/slau_gradient.h"
+
+#define NOMINMAX
+
+#include <time.h>
+#include <tbb/tbb.h>
+
+// #define DEBUG
+
+//----------------------------- Test Data Generation --------------------------
+
+dmat generateMatrix(int size, unsigned int seed) {
+    dmat res = dmat(size, std::vector<double>(size));
+    dvec v = generateVector(size, seed);
+    for (int i = 0; i < size; ++i) {
+        for (int j = 0; j < size; ++j) {
+            res[i][j] = v[i] * v[j];
+        }
+        res[i][i] += size;
+    }
+    return res;
+}
+dvec generateVector(int size, unsigned int seed) {
+    dvec res = dvec(size);
+    std::mt19937 mt(seed);
+    std::uniform_real_distribution<double> urd(-5, 5);
+    for (int i = 0; i < size; i++) {
+        res[i] = urd(mt);
+    }
+    return res;
+}
+
+//----------------------------- Sequential Computing Methods ------------------
+
+double vec_vec(const dvec &a, const dvec &b) {
+    return std::inner_product(a.begin(), a.end(), b.begin(), 0.0);
+}
+
+dvec matrix_vec(const dmat &a, const dvec &b) {
+    dvec res(a.size());
+    for (int i = 0; i < a.size(); i++) {
+        res[i] =  vec_vec(a[i], b);
+    }
+    return res;
+}
+
+dvec vec_vec_comb(double ma, const dvec& a, double mb, const dvec& b) {
+    dvec res(a.size());
+    for (int i = 0; i < a.size(); i++) {
+        res[i] = ma * a[i] + mb * b[i];
+    }
+    return res;
+}
+
+double vec_norm(const dvec& a) {
+    return sqrt(vec_vec(a, a));
+}
+
+//----------------------------- Parallel Computing Methods --------------------
+
+dvec tbb_matrix_vec(const dmat &a, const dvec &b) {
+    dvec res(a.size());
+
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, a.size()),
+    [&](const tbb::blocked_range<size_t>& r) {
+        for (size_t i = r.begin(); i < r.end(); i++) {
+            res[i] = vec_vec(a[i], b);
+        }
+    });
+
+    return res;
+}
+
+class VecVecFunctor {
+ private:
+    const dvec a, b;
+    double res;
+ public:
+    explicit VecVecFunctor(const dvec &v1, const dvec &v2):
+    a(v1), b(v2), res(0) {}
+    VecVecFunctor(const VecVecFunctor& f, tbb::split):
+    a(f.a), b(f.b), res(0) {}
+    void operator()(const tbb::blocked_range<size_t>& r) {
+        size_t begin = r.begin();
+        size_t end = r.end();
+        res += std::inner_product((a.begin() + r.begin()),
+                                  (a.begin() + r.end()),
+                                  (b.begin() + r.begin()), 0.0);
+    }
+    void join(const VecVecFunctor& f) {
+        res += f.res;
+    }
+    double result() {
+        return res;
+    }
+};
+
+double tbb_vec_vec(const dvec &a, const dvec &b) {
+    double ans = 0;
+
+    VecVecFunctor vf(a, b);
+    tbb::parallel_reduce(tbb::blocked_range<size_t>(0, a.size()), vf);
+
+    return vf.result();
+}
+
+//----------------------------- Conjugate Method Algorithm --------------------
+
+
+dvec solve(const dmat &a, const dvec& b) {
+    dvec res(a.size(), 0.0);
+
+    dvec r(b);
+    dvec p(r);
+
+    #ifdef DEBUG
+    tbb::tick_count begin = tbb::tick_count::now();
+    #endif
+
+    for (int i = 0; i < a.size(); i++) {
+        dvec r_prev;
+        dvec mv = matrix_vec(a, p);
+        r_prev = r;
+
+        double d = vec_vec(r, r) / std::max(vec_vec(p, mv), SMOL);
+        res = vec_vec_comb(1.0, res, d, p);
+        r = vec_vec_comb(1.0, r, -d, mv);
+
+        if (vec_norm(r) < SMOL) break;
+
+        double s = vec_vec(r, r) / std::max(vec_vec(r_prev, r_prev), SMOL);
+        p = vec_vec_comb(1.0, r, s, p);
+    }
+
+    #ifdef DEBUG
+    tbb::tick_count end = tbb::tick_count::now();
+    std::cout << "SEQ TIME " << (end - begin).seconds() << std::endl;
+    #endif
+
+    return res;
+}
+
+dvec tbb_solve(const dmat &a, const dvec& b) {
+    dvec res(a.size(), 0.0);
+
+    dvec r(b);
+    dvec p(r);
+
+    #ifdef DEBUG
+    tbb::tick_count begin = tbb::tick_count::now();
+    #endif
+
+    for (int i = 0; i < a.size(); i++) {
+        dvec r_prev;
+        dvec mv = tbb_matrix_vec(a, p);
+        r_prev = r;
+
+        double d = tbb_vec_vec(r, r) / std::max(tbb_vec_vec(p, mv), SMOL);
+
+        tbb::parallel_invoke(
+        [&]{ res = vec_vec_comb(1.0, res, d, p); },
+        [&]{ r = vec_vec_comb(1.0, r, -d, mv); });
+
+
+        if (vec_norm(r) < SMOL) break;
+
+        double s = tbb_vec_vec(r, r) /
+                std::max(tbb_vec_vec(r_prev, r_prev), SMOL);
+
+        p = vec_vec_comb(1.0, r, s, p);
+    }
+
+    #ifdef DEBUG
+    tbb::tick_count end = tbb::tick_count::now();
+    std::cout << "PARALLEL TIME " << (end - begin).seconds() << std::endl;
+    #endif
+
+    return res;
+}
+        \end{lstlisting}
+        
+        
+    
+\end{document}
