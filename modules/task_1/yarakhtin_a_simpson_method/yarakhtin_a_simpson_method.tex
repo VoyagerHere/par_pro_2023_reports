@@ -1,0 +1,442 @@
+\documentclass[14pt, a4paper]{extarticle}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[a4paper,
+left=2cm,
+right=2cm,
+top=2cm,
+bottom=2cm]{geometry}
+\usepackage{color}
+\usepackage{mathtools}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{tocloft}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\usepackage[russian]{babel}
+
+\setlength{\parindent}{0.8cm}
+\setlength{\parskip}{0.4cm}
+\renewcommand{\contentsname}{}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=none,
+  language=C++,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=4
+}
+
+\title{}
+\author{}
+\date{}
+
+\begin{document}
+  \begin{titlepage}
+    \begin{center}
+      {\bfseries МИНИСТЕРСТВО НАУКИ И ВЫСШЕГО ОБРАЗОВАНИЯ \\
+        РОССИЙСКОЙ ФЕДЕРАЦИИ}
+      \\
+      Федеральное государственное автономное образовательное учреждение высшего образования
+      \\
+      {\bfseries «Национальный исследовательский Нижегородский государственный университет им. Н.И. Лобачевского»\\(ННГУ)
+        \\Институт информационных технологий, математики и механики} \\
+    \end{center}
+
+    \vspace{8em}
+
+    \begin{center}
+      ОТЧЕТ \\ по лабораторной работе \\
+      «Параллельная реализация вычисления многомерных интегралов с использованием многошаговой схемы (метод Симпсона).»
+    \end{center}
+
+    \vspace{5em}
+
+
+    \begin{flushright}
+      {\bfseries Выполнил:} студент группы\\382006-2\\Ярахтин А.С. \underline{\hspace{3cm}} \linebreak\linebreak\linebreak
+      {\bfseries Проверил:} младший научный\\сотрудник\\Нестеров А.Ю. \underline{\hspace{3cm}} 
+    \end{flushright}
+
+
+    \vspace{\fill}
+
+    \begin{center}
+      Нижний Новгород\\2023
+    \end{center}
+
+  \end{titlepage}
+
+  \tableofcontents
+  \thispagestyle{empty}
+  \newpage
+
+  \pagestyle{plain}
+  \setcounter{page}{3}
+
+  \section{Введение}
+    Лабораторная работа посвящена изучению применения различных способов параллельных вычислений для решения задач, связанных с вычислением многомерных интегралов методом Симпсона. Особое внимание уделяется рассмотрению двух наиболее популярных библиотек для параллелизации - OpenMP и Intel Threading Building Blocks (TBB), а также решению из STL - std::thread.
+    
+    Метод Симпсона является одним из наиболее распространенных алгоритмов для численного вычисления многомерных интегралов, который основывается на аппроксимации подынтегральной функции интерполяционными многочленами второго порядка. Однако он не может эффективно обрабатываться большие объемы данных и требует оптимизации для повышения производительности.
+    
+    Для решения этой проблемы используются параллельные вычисления, которые позволяют распределять вычисления между несколькими процессорами или ядрами. В рамках лабораторной работы будут рассмотрены возможности и эффективность использования потоков из STL и двух библиотек параллельных вычислений - OpenMP и TBB - для решения задачи вычисления многомерных интегралов по методу Симпсона.
+
+  \newpage
+
+  \section{Постановка задачи}
+  Необходимо реализовать четыре варианта программы для вычисления многомерных интегралов методом Симпсона с использованием языка программирования C++.
+   \begin{itemize}
+\itemПервый вариант - последовательный, где вычисления будут проводиться последовательно, без использования каких-либо параллельных технологий.
+\itemВторой вариант - с использованием библиотеки OpenMP, которая позволяет выполнять вычисления на нескольких ядрах процессора одновременно.
+\itemТретий вариант - с использованием библиотеки TBB, которая также предоставляет возможность параллельного выполнения вычислений.
+\itemЧетвертый вариант - с использованием std::threads, который позволяет создавать потоки внутри программы.
+В результате работы всех четырех вариантов должна быть получена величина определенного интеграла в виде скаляра.
+\end{itemize}
+Для проверки корректности выполнения каждой из реализаций необходимо написать несколько тестовых случаев и использовать фреймворк Google Test для автоматического тестирования.
+После этого необходимо сравнить время работы каждой из реализаций и сделать вывод об их эффективности и использовании параллельных схем в данном алгоритме.
+  \newpage
+
+  \section{Описание алгоритма}
+
+  \begin{enumerate}
+    \item Задать в явном виде функцию f(x)
+      
+     \item Определить пределы интегрирования а, b и шаг интегрирования h, а также число участков разбиения n
+
+     \item Вычислить значения функции на 2n + 1 точках $x_{1} = a$, $x_{2} = a + \frac{h}{2}$, ..., $x_{2n + 1} = b$.
+        
+    \item Вычислить приближенное значение определенного интеграла F по формуле.
+    $F = \frac{h}{3}\cdot(f(a) + f(b) + 4\cdot\sum\limits_{i=1}^{\frac{n}{2} - 1}f(x_{2i + 1})) + 2\cdot\sum\limits_{i=1}^{\frac{n}{2} - 1}f(x_{2i})))$
+  \end{enumerate}
+  \newpage
+
+  \section{Описание схемы распараллеливания}
+С целью простоты разделения работы, n-мерный набор точек упорядочивается в линейный массив.
+Параллельная обработка заключается в разделении основного массива точек, полученных после выполнения первой половины алгоритма, на несколько частей, каждая из которых будет обрабатываться в отдельном потоке. Остальная часть метода остаётся неизменной, но выполняется только на той части массива, которая соответствует определенному потоку.
+
+В целом, все 3 параллельных реализации могут быть сведены к следующему описанию:
+  \begin{enumerate}
+    \item Определить количество потоков, участвующих в алгоритме.
+    \item Вычислить левую и правую границу в исходном массиве точек для обработки в текущем потоке.
+    \item Выполнить алгоритм метода Симпсона в каждом потоке на его наборе точек.
+    \item Сложить результаты работы всех потоков.
+  \end{enumerate}
+
+
+  \newpage
+
+  \section{Результаты экспериментов}
+  Каждый эксперимент заключается в определении размера множества входных данных, изначально задаётся размерность функции и число разбиений по каждому измерению, поскольку затем всё сводится к линейному массиву точек, имеет смысл сразу измерять объем данных в количестве точек. Каждый эксперимент повторяется пятикратно, затем в качестве длительности выполнения алгоритма выбирается среднее арифметическое времени в миллисекундах. Зависимость времени выполнения алгоритма от этого значения отражена в таблице:
+ 
+  \noindent\textbf{Результаты измерения времени работы в миллисекундах на 4 потоках:}\\\\
+    \begin{tabular}{|c | c | c | c | c | c |} 
+      \hline
+      Технология / Размер входных данных & $10^5$ & $10^6$ & $10^7$ & $10^8$ & $10^9$ \\
+      \hline
+      Seq & 5 & 99  & 822 & 6539 & 48212 \\ 
+      \hline
+      OpenMP & 2 & 37  & 217 & 1677 & 11833 \\ 
+      \hline
+      TBB & 3 & 42  & 189 & 1582 & 12602 \\ 
+      \hline
+      std::thread & 2 & 25  & 158 & 1272 & 10887 \\ 
+      \hline
+    \end{tabular}
+
+  \newpage
+
+  \section{Вывод}
+По результатам экспериментов можно сделать вывод, что для рассматриваемого параллельного алгоритма использование многопоточности является целесообразным. Однако следует отметить, что при значительном увеличении количества потоков время выполнения будет увеличиваться из-за накладных расходов, связанных с библиотеками OpenMP, TBB и std::thread, а также с разделением массива точек и сложением локальных результатов. На больших же объемах данных и малом числе потоков, все три параллельных варианта дают примерно одинаковое большое ускорение относительно последовательной версии.
+
+  \newpage
+
+  \section{Заключение}
+В процессе выполнения лабораторной работы были успешно изучены и реализованы 4 варианта метода Симпсона (3 параллельных версии и последовательная) и проведены эксперименты, которые показали, что время выполнения всех трех параллельных реализаций примерно равно. На основе результатов экспериментов были сделаны выводы о преимуществе и недостатках каждого подхода и выбран оптимальный вариант для данной задачи.
+
+В зависимости от цели и условий задачи, можно выбрать различную технологию для реализации метода Симпсона в параллельном режиме. Если требуется наибольшая производительность и гибкость в управлении потоками, то лучше использовать TBB (Intel Threading Building Blocks) или std::threads (стандартный шаблонный механизм потоков в C++). Если требуется простота использования и удобство, то стоит использовать OpenMP (Open Multi-Processing). Если важна скорость разработки и отладки программы, то предпочтительнее использовать последовательную реализацию метода Симпсона без распараллеливания.
+ 
+  \newpage
+
+    \section{Литература}
+    
+    \begin{enumerate}
+        \item Параллельное программирование с использованием технологии OpenMP. Антонов А.С.
+        \item Инструменты параллельного программирования для систем с общей памятью. К.В. Корняков, И.Б. Мееров, А.А. Сиднев, А.В. Сысоев, А.В. Шишков
+        \item  Метод Симпсона // wikipedia.org URL:\\ https://ru.wikipedia.org/wiki/Формула-Симпсона (дата обращения: 12.03.2023). 
+    \end{enumerate}
+
+  \newpage
+
+  \section{Приложение}
+
+  \subsection{Реализации метода Симпсона}
+    \subsubsection{Последовательная}
+  \begin{lstlisting}
+
+double simpson_method(std::vector<std::tuple<double, double, int>> scopes,
+    std::function<double(const std::vector<double>&)> func) {
+    int dim = scopes.size();
+    std::vector<double> h(dim);
+    int points_count = 1;
+    double main_coef = 1.;
+    for (int i = 0; i < dim; i++) {
+        int partions = std::get<2>(scopes[i]);
+        points_count *= (1 + 2 * partions);
+        h[i] = (std::get<1>(scopes[i]) - std::get<0>(scopes[i])) / (2. * partions);
+        main_coef *= h[i] / 3.;
+    }
+
+    double result = 0;
+    std::vector<double> func_args(dim);
+    for (int i = 0; i < points_count; i++) {
+        int coef = 1;
+        for (int j = 0, tmp = i; j < dim; j++) {
+            int points = (1 + 2 * std::get<2>(scopes[j]));
+            int index = tmp % points;
+            tmp /= points;
+            func_args[j] = std::get<0>(scopes[j]) + index * h[j];
+            if (index != 0 && index != points - 1) {
+                coef *= 2 * (1 + index % 2);
+            }
+        }
+        result += coef * func(func_args);
+    }
+    return main_coef * result;
+}
+
+  \end{lstlisting}
+  \newpage
+  \subsubsection{OMP}
+  \begin{lstlisting}
+double simpson_method_omp(std::vector<std::tuple<double, double, int>> scopes,
+    std::function<double(const std::vector<double>&)> func) {
+    int dim = scopes.size();
+    std::vector<double> h(dim);
+    int points_count = 1;
+    double main_coef = 1.;
+    for (int i = 0; i < dim; i++) {
+        int partions = std::get<2>(scopes[i]);
+        points_count *= (1 + 2 * partions);
+        h[i] = (std::get<1>(scopes[i]) - std::get<0>(scopes[i])) / (2. * partions);
+        main_coef *= h[i] / 3.;
+    }
+
+    constexpr int chunk_size = 1024;
+    int chunk_count = points_count / chunk_size + (points_count % chunk_size ? 1 : 0);
+
+    double result = 0;
+    #pragma omp parallel for
+    for (int k = 0; k < chunk_count; k++) {
+        double loc_result = 0;
+        for (int i = k * chunk_size; i < (k + 1) * chunk_size && i < points_count; i++) {
+            std::vector<double> func_args(dim);
+            int coef = 1;
+            for (int j = 0, tmp = i; j < dim; j++) {
+                int points = (1 + 2 * std::get<2>(scopes[j]));
+                int index = tmp % points;
+                tmp /= points;
+                func_args[j] = std::get<0>(scopes[j]) + index * h[j];
+                if (index != 0 && index != points - 1) {
+                    coef *= 2 * (1 + index % 2);
+                }
+            }
+            loc_result += coef * func(func_args);
+        }
+        #pragma omp critical
+        {
+            result += loc_result;
+        }
+    }
+
+    return main_coef * result;
+}
+  \end{lstlisting}
+  \newpage
+    \subsubsection{TBB}
+  \begin{lstlisting}
+
+double simpson_method_tbb(std::vector<std::tuple<double, double, int>> scopes,
+    std::function<double(const std::vector<double>&)> func) {
+    int dim = scopes.size();
+    std::vector<double> h(dim);
+    int points_count = 1;
+    double main_coef = 1.;
+    for (int i = 0; i < dim; i++) {
+        int partions = std::get<2>(scopes[i]);
+        points_count *= (1 + 2 * partions);
+        h[i] = (std::get<1>(scopes[i]) - std::get<0>(scopes[i])) / (2. * partions);
+        main_coef *= h[i] / 3.;
+    }
+
+    constexpr int chunk_size = 1024;
+    int chunk_count = points_count / chunk_size + (points_count % chunk_size ? 1 : 0);
+
+    double result = 0;
+    tbb::queuing_mutex mutex;
+    tbb::parallel_for(tbb::blocked_range<int>(0, chunk_count, 1),
+      [&](tbb::blocked_range<int> r) {
+        for (int k = r.begin(); k < r.end(); k++) {
+            double loc_result = 0;
+            for (int i = k * chunk_size; i < (k + 1) * chunk_size && i < points_count; i++) {
+                std::vector<double> func_args(dim);
+                int coef = 1;
+                for (int j = 0, tmp = i; j < dim; j++) {
+                    int points = (1 + 2 * std::get<2>(scopes[j]));
+                    int index = tmp % points;
+                    tmp /= points;
+                    func_args[j] = std::get<0>(scopes[j]) + index * h[j];
+                    if (index != 0 && index != points - 1) {
+                        coef *= 2 * (1 + index % 2);
+                    }
+                }
+                loc_result += coef * func(func_args);
+            }
+            tbb::queuing_mutex::scoped_lock lock(mutex);
+            result += loc_result;
+        }
+    });
+
+    return main_coef * result;
+}
+
+  \end{lstlisting}
+  \newpage
+    \subsubsection{STL Threads}
+  \begin{lstlisting}
+
+double simpson_method_std(std::vector<std::tuple<double, double, int>> scopes,
+    std::function<double(const std::vector<double>&)> func) {
+    int dim = scopes.size();
+    std::vector<double> h(dim);
+    int points_count = 1;
+    double main_coef = 1.;
+    for (int i = 0; i < dim; i++) {
+        int partions = std::get<2>(scopes[i]);
+        points_count *= (1 + 2 * partions);
+        h[i] = (std::get<1>(scopes[i]) - std::get<0>(scopes[i])) / (2. * partions);
+        main_coef *= h[i] / 3.;
+    }
+
+    int chunk_size = std::max(1024, static_cast<int>(sqrt(points_count)));
+    int chunk_count = points_count / chunk_size + (points_count % chunk_size ? 1 : 0);
+
+    double result = 0;
+    std::vector<std::thread> threads;
+    std::vector<double> loc_results(chunk_count, 0);
+    for (int k = 0; k < chunk_count; k++) {
+        std::thread th([k, chunk_size, points_count, &h, &result, &scopes, &loc_results, &func]() {
+            for (int i = k * chunk_size; i < (k + 1) * chunk_size && i < points_count; i++) {
+                std::vector<double> func_args(scopes.size());
+                int coef = 1;
+                for (int j = 0, tmp = i; j < scopes.size(); j++) {
+                    int points = (1 + 2 * std::get<2>(scopes[j]));
+                    int index = tmp % points;
+                    tmp /= points;
+                    func_args[j] = std::get<0>(scopes[j]) + index * h[j];
+                    if (index != 0 && index != points - 1) {
+                        coef *= 2 * (1 + index % 2);
+                    }
+                }
+                loc_results[k] += coef * func(func_args);
+            }
+            });
+        threads.push_back(std::move(th));
+    }
+    for (int k = 0; k < chunk_count; k++) {
+        threads[k].join();
+        result += loc_results[k];
+    }
+    return main_coef * result;
+}
+\end{lstlisting}
+
+\subsection{Тестирование}
+\begin{lstlisting}
+
+constexpr double epsilon = 0.001;
+
+double func_0(const std::vector<double>& args) {
+    return 1;
+}
+
+double func_1(const std::vector<double>& args) {
+    return 2 * args[0] * args[0] + args[0];
+}
+
+double func_2(const std::vector<double>& args) {
+    return args[0] * args[1] * sqrt(100 * args[1]);
+}
+
+double func_3(const std::vector<double>& args) {
+    double result = 1.;
+    for (double arg : args) {
+        result *= arg;
+    }
+    return result;
+}
+
+double func_4(const std::vector<double>& args) {
+    double result = 1.;
+    for (double arg : args) {
+        result += log(arg) * sqrt(arg);
+    }
+    return result;
+}
+
+TEST(Simpson_Method, Simple_Test) {
+    std::vector<std::tuple<double, double, int>> scopes = {
+        {1, 2, 6}
+    };
+    ASSERT_NEAR(1, simpson_method_std(scopes, func_0), epsilon);
+}
+
+TEST(Simpson_Method, Test_One_Arg) {
+    std::vector<std::tuple<double, double, int>> scopes = {
+        {0, 9, 10}
+    };
+    ASSERT_NEAR(simpson_method(scopes, func_1), simpson_method_std(scopes, func_1), epsilon);
+}
+
+TEST(Simpson_Method, Test_Two_Args) {
+    std::vector<std::tuple<double, double, int>> scopes = {
+        {2, 3, 10}, {3, 4, 10}
+    };
+    ASSERT_NEAR(simpson_method(scopes, func_2), simpson_method_std(scopes, func_2), epsilon);
+}
+
+TEST(Simpson_Method, Test_Multiple_Args) {
+    std::vector<std::tuple<double, double, int>> scopes = {
+        {0.1, 0.4, 10}, {2, 3, 10}, {-0.8, -0.3, 10}
+    };
+    ASSERT_NEAR(simpson_method(scopes, func_3), simpson_method_std(scopes, func_3), epsilon);
+}
+
+TEST(Simpson_Method, Test_Different_Partion) {
+    std::vector<std::tuple<double, double, int>> scopes = {
+        {2, 3, 7}, {6, 7, 2}, {1, 2, 4}
+    };
+    ASSERT_NEAR(simpson_method(scopes, func_4), simpson_method_std(scopes, func_4), epsilon);
+}
+
+TEST(Simpson_Method, Test_Big_Partion) {
+    std::vector<std::tuple<double, double, int>> scopes = {
+        {2, 5, 500}, {3, 7, 500}
+    };
+    ASSERT_NEAR(simpson_method(scopes, func_2), simpson_method_std(scopes, func_2), epsilon);
+}
+
+\end{lstlisting}
+\end{document}
