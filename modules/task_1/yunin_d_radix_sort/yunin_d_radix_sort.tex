@@ -1,0 +1,820 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+\date{}
+\title{}
+\author{}
+
+\begin{document}
+\begin{titlepage}
+\begin{center}
+    {\bfseries МИНИСТЕРСТВО НАУКИ И ВЫСШЕГО ОБРАЗОВАНИЯ \\
+        РОССИЙСКОЙ ФЕДЕРАЦИИ}\\Федеральное государственное автономное образовательное учреждение высшего образования\\
+    {\bfseries «Национальный исследовательский Нижегородский государственный университет им. Н.И. Лобачевского»\\(ННГУ)\\Институт информационных технологий, математики и механики} \\
+\end{center}
+\vspace{8em}
+\begin{center}
+    ОТЧЁТ\\ по лабораторной работе \\«Поразрядная сортировка для вещественных чисел (тип double) с простым слиянием»
+\end{center}
+\vspace{5em}
+\begin{flushright}
+    {\bfseries Выполнил:} студент группы 382006-2\\Юнин Д.Д.\underline{\hspace{3cm}} \linebreak\linebreak\linebreak
+    {\bfseries Проверил:} младший научный сотрудник\\Нестеров А.Ю. \underline{\hspace{3cm}} 
+\end{flushright}
+\vspace{\fill}
+\begin{center}
+    Нижний Новгород\\2023
+\end{center}
+\end{titlepage}
+% Содержание
+\tableofcontents
+\thispagestyle{empty}
+\newpage
+
+\pagestyle{plain}
+\setcounter{page}{3}
+\maketitle
+
+\section{Введение}
+
+Сортировка данных является одной из ключевых операций в области обработки и анализа информации. В современном мире, где объемы данных растут в геометрической прогрессии, умение эффективно сортировать большие массивы данных является неотъемлемой частью множества задач и приложений. От электронной коммерции до научных исследований, от финансовых операций до социальных сетей, сортировка данных играет важную роль в обеспечении оперативного и точного анализа информации.
+
+Целью данной лабораторной работы является изучение и сравнение разных параллельных реализаций алгоритма поразрядной сортировки (для чисел типа double) с использованием разных технологий. Параллельная обработка данных — это способ ускорения выполнения вычислительных задач за счет распределения работы между несколькими исполнителями (процессорами, ядрами, потоками и т.д.), которые могут выполняться одновременно и независимо друг от друга.
+
+Параллельная обработка данных для поразрядной сортировки заключается в том, что исходный массив разбивается на несколько подмассивов, которые сортируются независимо друг от друга на разных потоках. Затем эти подмассивы объединяются в один массив с помощью простого слияния и как итог, получается, полностью отсортированный массив.
+
+\newpage
+\section{Постановка задачи}
+В рамках данной работы нужно выполнить следующие задачи:
+\begin{enumerate}
+    \item Реализовать различные версии алгоритма поразрядной сортировки (типа double) с простым слиянием:  \begin{itemize} \item Последовательная реализация. Алгоритм выполняется в одном потоке. Данная реализация существует для сравнения производительности и корректности работы параллельных реализаций. \item Параллельная реализация алгоритма с применением технологии OpenMP. OpenMP - библиотека, которая позволяет писать параллельные программы на C, C++, Fortran. \item Параллельная реализация алгоритма с применением Intel Threading Building Blocks (TBB). TBB — это библиотека для написания параллельных программ на языке C++. \item Параллельная реализация алгоритма с применением std::thread. std::thread — это класс из стандартной библиотеки C++, который представляет собой низкоуровневый интерфейс для работы с потоками исполнения. \end{itemize}
+    \item Сравнить время работы разных реализаций алгоритма на различных наборах данных (массив случайных чисел, упорядоченный массив и т.д.).
+    \item Сделать выводы по полученным данным.
+\end{enumerate}
+
+\newpage
+\section{Описание программной реализации}
+
+\subsection{Функция printVector} 
+Функция принимает в качестве параметра вектор и печатает его содержимое на экран. Функция возращает void.
+
+\subsection{Функция getRandomVector} 
+Функция принимает в качестве параметров: размер вектора, левую и правую границы для чисел. В ней создаётся вектор конкретного размера и заполяется числа типа double в интвервале от левой границы до правой границы. Функция возвращает созданный вектор.
+
+\subsection{Функция countSort} 
+Функция реализует алгоритм сортировки подсчётом, что требуется для поразрядной сортировки. На вход функции в качестве параметров поступают 2 указателя типа double (входной и выходной массивы) и длина (размер массивов).
+Функция возвращает void.
+
+\subsection{Функция countSortFinalStep} 
+Функция реализует алгоритм сортировки подсчётом с некоторыми модернизациями для последнего шага в поразрядной сортировки. На вход функции в качестве параметров поступают 2 указателя типа double (входной и выходной массивы) и длина (размер массивов). функция возвращает значение типа bool.
+
+\subsection{Функция merge}
+Функция реализует алгоритм простого слияния двух отсортированных векторов в один тоже отсортированный вектор.
+Создаётся вектор, размер которого равен сумме размеров двух входных векторов.
+После чего в цикле for, который продолжается до достижения значения счётчика значения размера созданного вектора, объединяем массивы, сравнивания элементы каждого между собой и добавляем в результирующий вектор элемент того вектора, значения которого меньше и увеличиваем индекс того вектора, чьё значение добавил в результирующий массив. Если мы пришли к концу одного из векторов, то просто записываем в результирующий массив оставшиеся элементы другого вектора.
+
+
+\subsection{Функция splitVector} 
+Функция реализует разделение вектора на подвекторы, и сохраняет их как элементы в результирующий вектор. В качестве параметров функции приходят: массив с данными, количество частей, на которое нужно поделить вектор, временный вектор, который мы будем записывать в результирующий вектор и результирующий вектор, который внутри себя хранит вектора (все вектора хранят в себе значения типа double).
+
+\newpage
+\section{Описание алгоритмов}
+
+\subsection{Последовательная версия}
+
+В начале вектор данных разделяется на части.\\Каждая часть сортируется при помощи алгоритма поразрядной сортировки.\\Затем отсортированные части объединяются с помощью функции merge, которая реализует алгоритм простого слияния, в результате которого две отсортированные части объединяются в одну.
+
+\subsection{OpenMP версия}
+
+В первую очередь с помощью функции omp\_set\_num\_threads устанавливается количество потоков, которые будут использованы для параллельной обработки. В данном случае это количество равно количеству частей, на которые разделён вектор данных.
+
+Используется цикл parallel for, который запускает функцию radixSortSeq для каждого элемента вектора параллельно. Функция radixSortSeq выполняет последовательную поразрядную сортировку для каждого подвектора.\\
+После чего все части сливаются в один вектор.
+
+\subsection{TBB версия}
+Изначально создаётся объект класса tbb::global\_control, который устанавливает максимальное количество потоков, которые могут быть использованы для параллельной обработки. В данном случае это количество равно количеству частей, на которые разделён вектор данных.
+
+blocked\_range - это класс шаблонов из библиотеки TBB, который представляет диапазон значений, который может быть разделен между несколькими потоками. Он используется для разделения итераций цикла между потоками в параллельных вычислениях.
+
+В нашем случае tbb::blocked\_range<int>(0, vectorsForParallel.size()) создает объект blocked\_range, который представляет диапазон значений от 0 до размера вектора vectorsForParallel (равному количеству частей, на которые разделён изначальный вектор данных).
+
+Таким образом, запускается цикл parallel\_for, который разбивает вектор на блоки и запускает функцию radixSortSeq для каждого блока параллельно.
+
+\subsection{std::thread версия}
+В этой версии создаётся несколько потоков. Каждый поток выполняет поразрядную сортировку для своего элемента вектора. После того, как все потоки завершат свою работу, они объединяются обратно в главный поток с помощью функции join().
+
+\newpage
+\section{Результаты экспериментов}
+
+\noindent\textbf{Результаты измерения времени работы в миллисекундах на 4 потоках:}\\\\
+    \begin{tabular}{|c | c | c | c | c |} 
+      \hline
+      Технология / Размер входных данных & $10^5$ & $10^6$ & $10^7$ & $10^8$ \\
+      \hline
+      Seq & 2.15 & 21  & 304 & 3111 \\ 
+      \hline
+      OpenMP & 1.02 & 6.6  & 119 & 1266 \\ 
+      \hline
+      TBB & 1.1 & 7  & 119 & 1276 \\ 
+      \hline
+      std::thread & 1.32 & 7.5  & 120 & 1285 \\ 
+      \hline
+    \end{tabular}
+
+
+\newpage
+\section{Вывод}
+В ходе выполнения лабораторной работы были реализованы 4 варианта алгоритма пораздрядной сортировки (последовательная и параллельные версии) на языке программирования C++ и проведены эксперименты, которые показали, что время выполнения всех трех параллельных реализаций примерно равно.
+
+В зависимости от целей и условий задачи можно выбрать различную технологию для параллельной реализации алгоритма поразрядной сортировки. Если требуется максимальная производительность и гибкость, то можно использовать TBB или std::thread. Если требуется простота и удобство использования, то можно использовать OpenMP. Если требуется минимальное время разработки и отладки, то можно использовать последовательную реализацию.
+
+\newpage
+\begin{thebibliography}{9} \bibitem{shell-1} Поразрядная сортировка.
+https://algolist.manual.ru/sort/radix\_sort.php
+\bibitem{shell-2} Radix Sort - GeeksforGeeks. https://www.geeksforgeeks.org/radix-sort/ \end{thebibliography}
+
+\newpage
+\section{Приложение}
+\begin{verbatim}
+void printVector(const std::vector<double>& vec) {
+    for (int i = 0; i < vec.size(); i++) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+}
+
+std::vector<double> randomVec(int size, int leftBound, int rightBound) {
+    std::vector<double> vec(size);
+    std::mt19937 gen;
+    gen.seed(static_cast<uint32_t>(time(0)));
+    std::uniform_real_distribution<double> buf(leftBound, rightBound);
+    std::transform(vec.begin(), vec.end(), vec.begin(),
+        [&](double x) { return buf(gen); });
+    return vec;
+}
+
+std::vector<double> merge(const std::vector<double>& arr1,
+    const std::vector<double>& arr2) {
+    int len1 = arr1.size();
+    int len2 = arr2.size();
+    std::vector<double> out;
+    out.resize(len1 + len2);
+    int indexFirst = 0, indexSecond = 0;
+    for (int i = 0; i < len1 + len2; i++) {
+        if (indexFirst == len1) {
+            out[i] = arr2[indexSecond];
+            indexSecond++;
+            continue;
+        }
+        if (indexSecond == len2) {
+            out[i] = arr1[indexFirst];
+            indexFirst++;
+            continue;
+        }
+        if (arr1[indexFirst] > arr2[indexSecond]) {
+            out[i] = arr2[indexSecond];
+            indexSecond++;
+        } else if (arr1[indexFirst] <= arr2[indexSecond]) {
+            out[i] = arr1[indexFirst];
+            indexFirst++;
+        }
+    }
+    return out;
+}
+
+void countSort(double* in, double* out, int len, int exp) {
+    unsigned char* buf = reinterpret_cast<unsigned char*>(in);
+    int count[256] = { 0 };
+    for (int i = 0; i < len; i++) {
+        count[buf[8 * i + exp]]++;
+    }
+    /*for (int i = 0; i < 256; i++) {
+        std::cout << count[i] << " ";
+    }
+    std::cout << std::endl;*/
+    int sum = 0;
+    for (int i = 0; i < 256; i++) {
+        int temp = count[i];
+        count[i] = sum;
+        sum += temp;
+    }
+    /*for (int i = 0; i < 256; i++) {
+        std::cout << count[i] << " ";
+    }
+    std::cout << std::endl;*/
+    for (int i = 0; i < len; i++) {
+        out[count[buf[8 * i + exp]]] = in[i];
+        count[buf[8 * i + exp]]++;
+    }
+}
+
+bool countSortFinalStep(double* in, double* out, int len) {
+    int firstNegativeIndex = -1;
+    int firstPositiveIndex = -1;
+    bool positiveFlag = false, negativeFlag = false;
+    for (int i = 0; i < len; i++) {
+        if (positiveFlag && negativeFlag) {
+            break;
+        }
+        if (in[i] < 0 && !negativeFlag) {
+            firstNegativeIndex = i;
+            negativeFlag = true;
+        }
+        if (in[i] > 0 && !positiveFlag) {
+            firstPositiveIndex = i;
+            positiveFlag = true;
+        }
+    }
+    if (positiveFlag && negativeFlag) {
+        int j = len - 1;
+        bool flag = false;
+        for (int i = 0; i < len; i++) {
+            out[i] = in[j];
+            if (flag) {
+                j++;
+            } else {
+                j--;
+            }
+            if (j == firstNegativeIndex - 1 && !flag) {
+                j = 0;
+                flag = true;
+            }
+        }
+        return true;
+    } else if (!positiveFlag) {
+        for (int i = len - 1, j = 0; i >= 0; i--, j++) {
+            out[j] = in[i];
+        }
+        return true;
+    }
+    return false;
+}
+
+std::vector<double> radixSort(const std::vector<double>& data1,
+    const std::vector<double>& data2) {
+    int len1 = static_cast<int>(data1.size());
+    int len2 = static_cast<int>(data2.size());
+    std::vector<double> in1 = data1;
+    std::vector<double> out1(data1.size());
+    std::vector<double> in2 = data2;
+    std::vector<double> out2(data2.size());
+    for (int i = 0; i < 4; i++) {
+        countSort(in1.data(), out1.data(), len1, 2 * i);
+        countSort(out1.data(), in1.data(), len1, 2 * i + 1);
+    }
+    if (!countSortFinalStep(in1.data(), out1.data(), len1)) {
+        in1.swap(out1);
+    }
+    for (int i = 0; i < 4; i++) {
+        countSort(in2.data(), out2.data(), len2, 2 * i);
+        countSort(out2.data(), in2.data(), len2, 2 * i + 1);
+    }
+    if (!countSortFinalStep(in2.data(), out2.data(), len2)) {
+        in2.swap(out2);
+    }
+    return merge(out1, out2);
+}
+
+void printVector(const std::vector<double>& vec) {
+    for (int i = 0; i < vec.size(); i++) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+}
+
+std::vector<double> getRandomVector(int  size, int leftBound, int rightBound) {
+    std::vector<double> vec(size);
+    std::random_device dev;
+    std::mt19937 gen(dev());
+    std::uniform_real_distribution<double> buf(leftBound, rightBound);
+    for (int i = 0; i < size; i++) {
+        vec[i] = buf(gen);
+    }
+    return vec;
+}
+
+std::vector<double> merge(const std::vector<double>& arr1,
+    const std::vector<double>& arr2) {
+    int len1 = arr1.size();
+    int len2 = arr2.size();
+    std::vector<double> out;
+    out.resize(len1 + len2);
+    int indexFirst = 0, indexSecond = 0;
+    for (int i = 0; i < len1 + len2; i++) {
+        if (indexFirst == len1) {
+            out[i] = arr2[indexSecond];
+            indexSecond++;
+            continue;
+        }
+        if (indexSecond == len2) {
+            out[i] = arr1[indexFirst];
+            indexFirst++;
+            continue;
+        }
+        if (arr1[indexFirst] > arr2[indexSecond]) {
+            out[i] = arr2[indexSecond];
+            indexSecond++;
+        } else if (arr1[indexFirst] <= arr2[indexSecond]) {
+            out[i] = arr1[indexFirst];
+            indexFirst++;
+        }
+    }
+    return out;
+}
+
+void countSort(double* in, double* out, int len, int exp) {
+    unsigned char* buf = reinterpret_cast<unsigned char*>(in);
+    int count[256] = { 0 };
+    for (int i = 0; i < len; i++) {
+        count[buf[8 * i + exp]]++;
+    }
+    /*for (int i = 0; i < 256; i++) {
+        std::cout << count[i] << " ";
+    }
+    std::cout << std::endl;*/
+    int sum = 0;
+    for (int i = 0; i < 256; i++) {
+        int temp = count[i];
+        count[i] = sum;
+        sum += temp;
+    }
+    /*for (int i = 0; i < 256; i++) {
+        std::cout << count[i] << " ";
+    }
+    std::cout << std::endl;*/
+    for (int i = 0; i < len; i++) {
+        out[count[buf[8 * i + exp]]] = in[i];
+        count[buf[8 * i + exp]]++;
+    }
+}
+
+bool countSortFinalStep(double* in, double* out, int len) {
+    int firstNegativeIndex = -1;
+    int firstPositiveIndex = -1;
+    bool positiveFlag = false, negativeFlag = false;
+    for (int i = 0; i < len; i++) {
+        if (positiveFlag && negativeFlag) {
+            break;
+        }
+        if (in[i] < 0 && !negativeFlag) {
+            firstNegativeIndex = i;
+            negativeFlag = true;
+        }
+        if (in[i] > 0 && !positiveFlag) {
+            firstPositiveIndex = i;
+            positiveFlag = true;
+        }
+    }
+    if (positiveFlag && negativeFlag) {
+        int j = len - 1;
+        bool flag = false;
+        for (int i = 0; i < len; i++) {
+            out[i] = in[j];
+            if (flag) {
+                j++;
+            } else {
+                j--;
+            }
+            if (j == firstNegativeIndex - 1 && !flag) {
+                j = 0;
+                flag = true;
+            }
+        }
+        return true;
+    } else if (!positiveFlag) {
+        for (int i = len - 1, j = 0; i >= 0; i--, j++) {
+            out[j] = in[i];
+        }
+        return true;
+    }
+    return false;
+}
+
+
+
+std::vector<double> radixSortSeq(const std::vector<double>& data) {
+    int len = static_cast<int>(data.size());
+    std::vector<double> in = data;
+    std::vector<double> out(data.size());
+    for (int i = 0; i < 4; i++) {
+        countSort(in.data(), out.data(), len, 2 * i);
+        countSort(out.data(), in.data(), len, 2 * i + 1);
+    }
+    if (!countSortFinalStep(in.data(), out.data(), len)) {
+        in.swap(out);
+    }
+    return out;
+}
+
+std::vector<std::vector<double>> splitVector(const std::vector<double>& data, int numParts) {
+    std::vector<std::vector<double>> resultVec;
+    std::vector<double> tmp;
+
+    if (numParts < 2 || data.size() < numParts) {
+        resultVec.push_back(data);
+        return resultVec;
+    }
+
+    int i = 0;
+    int part = (data.size() / numParts) + 1;
+    for (i = 0; i < numParts - 1; i++) {
+        for (int j = i * part; j < (i + 1) * part; j++) {
+            tmp.push_back(data[j]);
+        }
+        resultVec.push_back(tmp);
+        tmp.clear();
+    }
+    for (int j = i * part; j < data.size(); j++) {
+        tmp.push_back(data[j]);
+    }
+    resultVec.push_back(tmp);
+    return resultVec;
+}
+
+std::vector<double> radixSortParallOmp(const std::vector<double>& data, int numParts) {
+    std::vector<std::vector<double>> vectorsForParallel = splitVector(data, numParts);
+    std::vector<double> finalResult;
+    omp_set_num_threads(vectorsForParallel.size());
+    // auto start1 = std::chrono::high_resolution_clock::now();
+#pragma omp parallel for
+    for (int i = 0; i < vectorsForParallel.size(); ++i) {
+        vectorsForParallel[i] = radixSortSeq(vectorsForParallel[i]);
+    }
+
+    // auto stop1 = std::chrono::high_resolution_clock::now();
+    // auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>(stop1 - start1);
+    // std::cout << "duration_omp: " << duration1.count() << '\n';
+    for (int i = 0; i < vectorsForParallel.size(); i++) {
+        finalResult = merge(finalResult, vectorsForParallel[i]);
+    }
+    // printVector(finalResult);
+    return finalResult;
+}
+
+void printVector(const std::vector<double>& vec) {
+    for (int i = 0; i < vec.size(); i++) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+}
+
+std::vector<double> getRandomVector(int  size, int leftBound, int rightBound) {
+    std::vector<double> vec(size);
+    std::random_device dev;
+    std::mt19937 gen(dev());
+    std::uniform_real_distribution<double> buf(leftBound, rightBound);
+    for (int i = 0; i < size; i++) {
+        vec[i] = buf(gen);
+    }
+    return vec;
+}
+
+std::vector<double> merge(const std::vector<double>& arr1,
+    const std::vector<double>& arr2) {
+    int len1 = arr1.size();
+    int len2 = arr2.size();
+    std::vector<double> out;
+    out.resize(len1 + len2);
+    int indexFirst = 0, indexSecond = 0;
+    for (int i = 0; i < len1 + len2; i++) {
+        if (indexFirst == len1) {
+            out[i] = arr2[indexSecond];
+            indexSecond++;
+            continue;
+        }
+        if (indexSecond == len2) {
+            out[i] = arr1[indexFirst];
+            indexFirst++;
+            continue;
+        }
+        if (arr1[indexFirst] > arr2[indexSecond]) {
+            out[i] = arr2[indexSecond];
+            indexSecond++;
+        } else if (arr1[indexFirst] <= arr2[indexSecond]) {
+            out[i] = arr1[indexFirst];
+            indexFirst++;
+        }
+    }
+    return out;
+}
+
+void countSort(double* in, double* out, int len, int exp) {
+    unsigned char* buf = reinterpret_cast<unsigned char*>(in);
+    int count[256] = { 0 };
+    for (int i = 0; i < len; i++) {
+        count[buf[8 * i + exp]]++;
+    }
+    /*for (int i = 0; i < 256; i++) {
+        std::cout << count[i] << " ";
+    }
+    std::cout << std::endl;*/
+    int sum = 0;
+    for (int i = 0; i < 256; i++) {
+        int temp = count[i];
+        count[i] = sum;
+        sum += temp;
+    }
+    /*for (int i = 0; i < 256; i++) {
+        std::cout << count[i] << " ";
+    }
+    std::cout << std::endl;*/
+    for (int i = 0; i < len; i++) {
+        out[count[buf[8 * i + exp]]] = in[i];
+        count[buf[8 * i + exp]]++;
+    }
+}
+
+bool countSortFinalStep(double* in, double* out, int len) {
+    int firstNegativeIndex = -1;
+    int firstPositiveIndex = -1;
+    bool positiveFlag = false, negativeFlag = false;
+    for (int i = 0; i < len; i++) {
+        if (positiveFlag && negativeFlag) {
+            break;
+        }
+        if (in[i] < 0 && !negativeFlag) {
+            firstNegativeIndex = i;
+            negativeFlag = true;
+        }
+        if (in[i] > 0 && !positiveFlag) {
+            firstPositiveIndex = i;
+            positiveFlag = true;
+        }
+    }
+    if (positiveFlag && negativeFlag) {
+        int j = len - 1;
+        bool flag = false;
+        for (int i = 0; i < len; i++) {
+            out[i] = in[j];
+            if (flag) {
+                j++;
+            } else {
+                j--;
+            }
+            if (j == firstNegativeIndex - 1 && !flag) {
+                j = 0;
+                flag = true;
+            }
+        }
+        return true;
+    } else if (!positiveFlag) {
+        for (int i = len - 1, j = 0; i >= 0; i--, j++) {
+            out[j] = in[i];
+        }
+        return true;
+    }
+    return false;
+}
+
+
+
+std::vector<double> radixSortSeq(const std::vector<double>& data) {
+    int len = static_cast<int>(data.size());
+    std::vector<double> in = data;
+    std::vector<double> out(data.size());
+    for (int i = 0; i < 4; i++) {
+        countSort(in.data(), out.data(), len, 2 * i);
+        countSort(out.data(), in.data(), len, 2 * i + 1);
+    }
+    if (!countSortFinalStep(in.data(), out.data(), len)) {
+        in.swap(out);
+    }
+    return out;
+}
+
+std::vector<std::vector<double>> splitVector(const std::vector<double>& data, int numParts) {
+    std::vector<std::vector<double>> resultVec;
+    std::vector<double> tmp;
+
+    if (numParts < 2 || data.size() < numParts) {
+        resultVec.push_back(data);
+        return resultVec;
+    }
+
+    int i = 0;
+    int part = (data.size() / numParts) + 1;
+    for (i = 0; i < numParts - 1; i++) {
+        for (int j = i * part; j < (i + 1) * part; j++) {
+            tmp.push_back(data[j]);
+        }
+        resultVec.push_back(tmp);
+        tmp.clear();
+    }
+    for (int j = i * part; j < data.size(); j++) {
+        tmp.push_back(data[j]);
+    }
+    resultVec.push_back(tmp);
+    return resultVec;
+}
+
+std::vector<double> radixSortParallOmp(const std::vector<double>& data, int numParts) {
+    std::vector<std::vector<double>> vectorsForParallel = splitVector(data, numParts);
+    std::vector<double> finalResult;
+    // auto start1 = std::chrono::high_resolution_clock::now();
+
+    tbb::global_control gc(tbb::global_control::max_allowed_parallelism, vectorsForParallel.size());
+    tbb::parallel_for(tbb::blocked_range<double>(0, vectorsForParallel.size()),
+        [&](const tbb::blocked_range<double>& r) {
+        for (int i = r.begin(); i < r.end(); ++i) {
+            vectorsForParallel[i] = radixSortSeq(vectorsForParallel[i]);
+        }
+        });
+
+    // auto stop1 = std::chrono::high_resolution_clock::now();
+    // auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>(stop1 - start1);
+    // std::cout << "duration_tbb: " << duration1.count() << '\n';
+    for (int i = 0; i < vectorsForParallel.size(); i++) {
+        finalResult = merge(finalResult, vectorsForParallel[i]);
+    }
+    // printVector(finalResult);
+    return finalResult;
+}
+
+void printVector(const std::vector<double>& vec) {
+    for (int i = 0; i < vec.size(); i++) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+}
+
+std::vector<double> getRandomVector(int  size, int leftBound, int rightBound) {
+    std::vector<double> vec(size);
+    std::random_device dev;
+    std::mt19937 gen(dev());
+    std::uniform_real_distribution<double> buf(leftBound, rightBound);
+    for (int i = 0; i < size; i++) {
+        vec[i] = buf(gen);
+    }
+    return vec;
+}
+
+std::vector<double> merge(const std::vector<double>& arr1,
+    const std::vector<double>& arr2) {
+    int len1 = arr1.size();
+    int len2 = arr2.size();
+    std::vector<double> out;
+    out.resize(len1 + len2);
+    int indexFirst = 0, indexSecond = 0;
+    for (int i = 0; i < len1 + len2; i++) {
+        if (indexFirst == len1) {
+            out[i] = arr2[indexSecond];
+            indexSecond++;
+            continue;
+        }
+        if (indexSecond == len2) {
+            out[i] = arr1[indexFirst];
+            indexFirst++;
+            continue;
+        }
+        if (arr1[indexFirst] > arr2[indexSecond]) {
+            out[i] = arr2[indexSecond];
+            indexSecond++;
+        } else if (arr1[indexFirst] <= arr2[indexSecond]) {
+            out[i] = arr1[indexFirst];
+            indexFirst++;
+        }
+    }
+    return out;
+}
+
+void countSort(double* in, double* out, int len, int exp) {
+    unsigned char* buf = reinterpret_cast<unsigned char*>(in);
+    int count[256] = { 0 };
+    for (int i = 0; i < len; i++) {
+        count[buf[8 * i + exp]]++;
+    }
+    /*for (int i = 0; i < 256; i++) {
+        std::cout << count[i] << " ";
+    }
+    std::cout << std::endl;*/
+    int sum = 0;
+    for (int i = 0; i < 256; i++) {
+        int temp = count[i];
+        count[i] = sum;
+        sum += temp;
+    }
+    /*for (int i = 0; i < 256; i++) {
+        std::cout << count[i] << " ";
+    }
+    std::cout << std::endl;*/
+    for (int i = 0; i < len; i++) {
+        out[count[buf[8 * i + exp]]] = in[i];
+        count[buf[8 * i + exp]]++;
+    }
+}
+
+bool countSortFinalStep(double* in, double* out, int len) {
+    int firstNegativeIndex = -1;
+    int firstPositiveIndex = -1;
+    bool positiveFlag = false, negativeFlag = false;
+    for (int i = 0; i < len; i++) {
+        if (positiveFlag && negativeFlag) {
+            break;
+        }
+        if (in[i] < 0 && !negativeFlag) {
+            firstNegativeIndex = i;
+            negativeFlag = true;
+        }
+        if (in[i] > 0 && !positiveFlag) {
+            firstPositiveIndex = i;
+            positiveFlag = true;
+        }
+    }
+    if (positiveFlag && negativeFlag) {
+        int j = len - 1;
+        bool flag = false;
+        for (int i = 0; i < len; i++) {
+            out[i] = in[j];
+            if (flag) {
+                j++;
+            } else {
+                j--;
+            }
+            if (j == firstNegativeIndex - 1 && !flag) {
+                j = 0;
+                flag = true;
+            }
+        }
+        return true;
+    } else if (!positiveFlag) {
+        for (int i = len - 1, j = 0; i >= 0; i--, j++) {
+            out[j] = in[i];
+        }
+        return true;
+    }
+    return false;
+}
+
+
+
+std::vector<double> radixSortSeq(const std::vector<double>& data) {
+    int len = static_cast<int>(data.size());
+    std::vector<double> in = data;
+    std::vector<double> out(data.size());
+    for (int i = 0; i < 4; i++) {
+        countSort(in.data(), out.data(), len, 2 * i);
+        countSort(out.data(), in.data(), len, 2 * i + 1);
+    }
+    if (!countSortFinalStep(in.data(), out.data(), len)) {
+        in.swap(out);
+    }
+    return out;
+}
+
+std::vector<std::vector<double>> splitVector(const std::vector<double>& data, int numParts) {
+    std::vector<std::vector<double>> resultVec;
+    std::vector<double> tmp;
+
+    if (numParts < 2 || data.size() < numParts) {
+        resultVec.push_back(data);
+        return resultVec;
+    }
+
+    int i = 0;
+    int part = (data.size() / numParts) + 1;
+    for (i = 0; i < numParts - 1; i++) {
+        for (int j = i * part; j < (i + 1) * part; j++) {
+            tmp.push_back(data[j]);
+        }
+        resultVec.push_back(tmp);
+        tmp.clear();
+    }
+    for (int j = i * part; j < data.size(); j++) {
+        tmp.push_back(data[j]);
+    }
+    resultVec.push_back(tmp);
+    return resultVec;
+}
+
+std::vector<double> radixSortParallOmp(const std::vector<double>& data, int numParts) {
+    std::vector<std::vector<double>> vectorsForParallel = splitVector(data, numParts);
+    std::vector<double> finalResult;
+     // auto start1 = std::chrono::high_resolution_clock::now();
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < vectorsForParallel.size(); i++) {
+        threads.emplace_back([i, &vectorsForParallel]() {
+            vectorsForParallel[i] = radixSortSeq(vectorsForParallel[i]);
+            });
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+     // auto stop1 = std::chrono::high_resolution_clock::now();
+     // auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>(stop1 - start1);
+     // std::cout << "duration_std: " << duration1.count() << '\n';
+    for (int i = 0; i < vectorsForParallel.size(); i++) {
+        finalResult = merge(finalResult, vectorsForParallel[i]);
+    }
+    // printVector(finalResult);
+    return finalResult;
+}
+\end{verbatim}
+
+\end{document}
